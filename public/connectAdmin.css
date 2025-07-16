@@ -1,0 +1,342 @@
+/* you can choose any color you want. don't be afraid to experiment  */
+
+/* Centrage du formulaire de connexion */
+
+
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form {
+    margin-top: 150px;
+  background-color: white;
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  min-width: 300px;
+  z-index: 1;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.wrapper {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+.input, button {
+  width: 100%;
+  height: 40px;
+  position: relative;
+  padding: 10px;
+  border: 0.1px solid #575cb5;
+}
+
+button {
+  background: #6d74e3;
+  border: none;
+}
+
+.wrapper {
+  position: relative;
+  transform: skewY(-14deg);
+}
+
+.wrapper li, button {
+  position: relative;
+  list-style: none;
+  width: 200px;
+  z-index: var(--i);
+  transition: 0.3s;
+  color: white;
+}
+
+.wrapper li::before, button::before {
+  position: absolute;
+  content: '';
+  background: #6d74e3;
+  top: 0;
+  left: -40px;
+  width: 40px;
+  height: 40px;
+  transform-origin: right;
+  transform: skewY(45deg);
+  transition: 0.3s;
+}
+
+.wrapper li::after, button::after {
+  position: absolute;
+  content: '';
+  background: #6d74e3;
+  width: 200px;
+  height: 40px;
+  top: -40px;
+  left: 0;
+  transform-origin: bottom;
+  transform: skewX(45deg);
+  transition: 0.3s;
+}
+
+.wrapper li:nth-child(1)::after, .wrapper li:nth-child(1)::before {
+  background-color: #d8daf7;
+}
+
+.wrapper li:nth-child(2)::after, .wrapper li:nth-child(2)::before {
+  background-color: #c2c5f3;
+}
+
+.wrapper li:nth-child(3)::after, .wrapper li:nth-child(3)::before {
+  background-color: #989deb;
+}
+
+li .input {
+  outline: none;
+  border: none;
+  color: black;
+}
+
+li .input::placeholder {
+  color: black;
+}
+
+li:nth-child(1) .input {
+  background: #d8daf7;
+}
+
+li:nth-child(2) .input {
+  background: #c2c5f3;
+}
+
+li:nth-child(3) .input {
+  background: #989deb;
+}
+
+
+li:nth-child(1) .input:focus {
+  outline: none;
+  border: 3.5px solid #d8daf7;
+}
+
+li:nth-child(2) .input:focus {
+  outline: none;
+  border: 3.5px solid #c2c5f3;
+}
+
+li:nth-child(3) .input:focus {
+  outline: none;
+  border: 3.5px solid #989deb;
+}
+
+.wrapper li:hover, button:hover {
+  transform: translateX(-20px);
+}
+
+button:hover, button:hover::before, button:hover::after {
+  background: #575cb5;
+}
+
+button:active {
+  transform: translateX(0px);
+}
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.container {
+  width: 280px;
+  height: 380px;
+  background-color: #151716;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  filter: hue-rotate(10deg);
+  color: #2fbb39;
+  gap: 20px;
+}
+
+.data {
+  margin-top: 25px;
+  border: 2px solid;
+  padding: 15px;
+  border-radius: 5px;
+  background: #000000;
+}
+
+.data::after {
+  background: #000000;
+  content: "WIND - 54,3";
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  border: 2px solid;
+  padding: 3px;
+  border-radius: 5px;
+  font-size: .7em;
+}
+
+.data::before {
+  content: "DEPT - 600";
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  border: 2px solid;
+  padding: 3px;
+  border-radius: 5px;
+  font-size: .7em;
+  background: #000000;
+}
+
+.card {
+  width: 200px;
+  height: 200px;
+  background: #000000;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #18D322;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 200px;
+  left: 49%;
+  background-color: #18D322;
+  animation: rotate 3s linear infinite;
+  z-index: 6;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  width: 0px;
+  height: 200px;
+  left: 49%;
+  transform: rotate(-4deg);
+  background-color: #18D322;
+  animation: rotate 3s linear infinite;
+  box-shadow: 0 0 10px 10px #2fbb39;
+  z-index: 6;
+}
+
+.circle {
+  width: 100px;
+  height: 100px;
+  border: 2px solid #18D322;
+  border-radius: 50%;
+}
+
+.circle::before {
+  content: "";
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  border: 2px solid #18D322;
+  border-radius: 50%;
+}
+
+.circle::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  border: 2px solid #18D322;
+  border-radius: 50%;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  top: 30%;
+  background-color: #18D322;
+  border-radius: 50%;
+  position: absolute;
+  animation: doted 1.5s  ease infinite;
+}
+
+.dot2 {
+  width: 4px;
+  height: 4px;
+  top: 80%;
+  right: 30%;
+  background-color: #18D322;
+  border-radius: 50%;
+  position: absolute;
+  animation: doted 1.5s  1.2s ease infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes doted {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 10px 5px rgba(24, 211, 33, 0.3),0 0 10px 10px rgba(24, 211, 33, 0.3);
+  }
+
+  60% {
+    transform: scale(0.95);
+    box-shadow: 0 0 10px 5px rgba(24, 211, 33, 0.3),0 0 10px 10px rgba(24, 211, 33, 0.3);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(24, 211, 33, 0.7),0 0 0 0 rgba(24, 211, 33, 0.5),0 0 0 0 rgba(24, 211, 33, 0.3);
+    opacity: 0;
+  }
+}
