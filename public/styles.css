@@ -119,7 +119,7 @@
         .logo {
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            background: linear-gradient(45deg, white);
             border-radius: 50%;
             display: flex;
             justify-content: center;
