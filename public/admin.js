@@ -1,5 +1,5 @@
-// const BASE_URL = "http://localhost:3000";
-const BASE_URL = "https://ecefa-form.onrender.com";
+const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://ecefa-form.onrender.com";
 
 
 // ------------------ Initialisation ------------------
@@ -13,6 +13,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   await chargerListeFormulaires();
 
 });
+
+// ------------------ fonction utilitaire pour générer un champ dynamique ------------------
+
+function creerChampModale(nomChamp, valeur) {
+  return `
+    <label>
+      ${nomChamp} :
+      <input name="${nomChamp}" value="${valeur || ''}" />
+    </label>
+  `;
+}
+
+
+// ------------------ Récupération de la valeur d'un champ dynamique ------------------
+/**
+ * Récupère la valeur d'un champ dynamique à partir de son label
+ * @param {Array} donnees - Liste des champs dynamiques
+ * @param {string} motCle - Partie du label à rechercher (ex: "nom", "téléphone")
+ * @returns {string} Valeur du champ trouvé ou '—'
+ */
+function getValeurParLabel(donnees, motCle) {
+  const champ = donnees?.find(c =>
+    c.label?.toLowerCase().includes(motCle.toLowerCase())
+  );
+  return champ ? champ.valeur : '—';
+}
+
+
 
 
 
@@ -40,6 +68,37 @@ function extraireValeur(inscrit, labelRecherche) {
   if (index === -1) return '—';
   return inscrit.donnees[`champ_${index}`] || '—';
 }
+
+// Extraire la valeur depuis les champs dynamiques avec une clé dynamique
+
+
+const motsCles = {
+  nom: ['nom', 'nom complet', 'nom & prénom', 'nom prénom'],
+  formation: ['formation', 'spécialité'],
+  téléphone: ['téléphone', 'tel', 'téléphone mobile', 'numéro']
+};
+
+
+
+
+
+function extraireValeurDynamique(inscrit, clePrincipale) {
+  const donnees = inscrit.donnees || {};
+  const variantes = motsCles[clePrincipale] || [clePrincipale]; // si non trouvé, utilise la clé brute
+  const regexListe = variantes.map(v => new RegExp(v, 'i'));
+
+  for (const key in donnees) {
+    for (const regex of regexListe) {
+      if (regex.test(key)) {
+        return donnees[key];
+      }
+    }
+  }
+
+  return '';
+}
+
+
 
 
 let idEtudiantSelectionne = null;
@@ -264,12 +323,12 @@ async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateD
     const inscrits = await res.json();
 
     const resultat = inscrits.filter(inscrit => {
-      const nom = extraireValeur(inscrit, 'nom');
-      const tel = extraireValeur(inscrit, 'téléphone');
-      const formation = extraireValeur(inscrit, 'formation');
+      const nom = extraireValeurDynamique(inscrit, 'nom');
+      const tel = extraireValeurDynamique(inscrit, 'téléphone');
+      const formation = extraireValeurDynamique(inscrit, 'formation');
 
       const nomOk = nom.toLowerCase().includes(filtreTexte.toLowerCase()) ||
-                    tel.toLowerCase().includes(filtreTexte.toLowerCase());
+        tel.toLowerCase().includes(filtreTexte.toLowerCase());
 
       const formationOk = !filtreFormation || formation === filtreFormation;
 
@@ -281,9 +340,9 @@ async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateD
     });
 
     resultat.forEach(inscrit => {
-      const nom = extraireValeur(inscrit, 'nom');
-      const tel = extraireValeur(inscrit, 'téléphone');
-      const formation = extraireValeur(inscrit, 'formation');
+      const nom = extraireValeurDynamique(inscrit, 'nom');
+      const tel = extraireValeurDynamique(inscrit, 'téléphone');
+      const formation = extraireValeurDynamique(inscrit, 'formation');
       const statut = inscrit.statut || 'En attente';
       const date = new Date(inscrit.createdAt).toLocaleDateString();
 
@@ -309,20 +368,11 @@ async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateD
 
       tbody.appendChild(tr);
     });
-
-    // 👁‍🗨 Bouton "Vue" pour confirmation
-    document.querySelectorAll('.view').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        await fetchWithAuth(`${BASE_URL}/api/inscription/confirmer/${id}`, { method: "PATCH" });
-        chargerInscriptions(document.getElementById("searchInput").value);
-      });
-    });
-
   } catch (err) {
-    console.error("Erreur chargement des inscriptions", err);
+    console.error("Erreur de chargement des inscriptions :", err);
   }
 }
+
 
 // ------------------ Statistiques ------------------
 async function chargerStatistiques() {
@@ -391,7 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("token");
-    window.location.href = "/connectAdmin.html"; 
+    window.location.href = "/connectAdmin.html";
   });
 });
 
@@ -401,8 +451,10 @@ const closeModal = document.getElementById('closeEditModal');
 const editForm = document.getElementById('editForm');
 let currentEditId = null;
 
+// Fermer la modale
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 
+// Ouvrir la modale d'édition dynamiquement
 document.addEventListener('click', async (e) => {
   if (e.target.closest('.action-btn.edit')) {
     const btn = e.target.closest('.action-btn.edit');
@@ -412,12 +464,33 @@ document.addEventListener('click', async (e) => {
       const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${currentEditId}`);
       if (!res.ok) throw new Error("Étudiant introuvable");
       const data = await res.json();
+      const donnees = data.donnees || {};
 
-      editForm.nom_prenom.value = data.nom_prenom || '';
-      editForm.formation.value = data.formation || '';
-      editForm.createdAt.value = data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : '';
+      // Vider le formulaire avant d’ajouter dynamiquement les champs
+      editForm.innerHTML = `
+        <span id="closeEditModal" class="close" title="Fermer">
+            <i class="fas fa-times"></i>
+        </span>
+        <h3><i class="fas fa-user-edit"></i> Modifier l'étudiant</h3>
+      `;
+
+      for (const [champ, valeur] of Object.entries(donnees)) {
+        editForm.innerHTML += `
+          <label>
+            ${champ} :
+            <input name="${champ}" value="${valeur || ''}" />
+          </label>
+        `;
+      }
+
+      editForm.innerHTML += `
+        <button type="submit">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      `;
 
       modal.style.display = 'block';
+
     } catch (err) {
       console.error("Erreur chargement étudiant", err);
       alert("Impossible de charger les données.");
@@ -425,28 +498,63 @@ document.addEventListener('click', async (e) => {
   }
 });
 
+// Soumettre la mise à jour
 editForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const payload = {
-    nom_prenom: editForm.nom_prenom.value,
-    formation: editForm.formation.value,
-    createdAt: editForm.createdAt.value
-  };
+
+  const inputs = Array.from(editForm.querySelectorAll('input[name]'));
+  const nouvellesDonnees = {};
+
+  inputs.forEach(input => {
+    nouvellesDonnees[input.name] = input.value;
+  });
 
   try {
     await fetchWithAuth(`${BASE_URL}/api/inscription/${currentEditId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ donnees: nouvellesDonnees })
     });
 
     modal.style.display = 'none';
     chargerInscriptions(document.getElementById("searchInput").value);
+
   } catch (err) {
     console.error("Erreur mise à jour", err);
     alert("Erreur lors de la mise à jour.");
   }
 });
+
+
+
+// ------------------ Enregistrement des modifications ------------------
+
+document.getElementById('editForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+
+  const inputs = Array.from(this.querySelectorAll('input[name]'));
+  const nouvellesDonnees = {};
+
+  inputs.forEach(input => {
+    nouvellesDonnees[input.name] = input.value;
+  });
+
+  try {
+    await fetchWithAuth(`${BASE_URL}/api/inscription/${idEtudiantSelectionne}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ donnees: nouvellesDonnees })
+    });
+
+    alert('Modification enregistrée');
+    document.getElementById('editModal').style.display = 'none';
+    chargerInscriptions(); // Recharger la liste
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'enregistrement");
+  }
+});
+
 
 // ------------------ Filtrage ------------------
 document.getElementById("btnFiltrer").addEventListener("click", () => {
@@ -479,15 +587,14 @@ async function remplirFiltreFormations() {
   const select = document.getElementById("filtreFormation");
   select.innerHTML = `<option value="">Toutes les formations</option>`;
 
+
+
   // 🔍 Trouver l’index du champ "formation"
 
 
-
-
-
- const indexFormation = champsFormulaireActif.findIndex(champ =>
-  champ.label?.toLowerCase().includes("formation")
-);
+  const indexFormation = champsFormulaireActif.findIndex(champ =>
+    champ.label?.toLowerCase().includes("formation")
+  );
 
 
   if (indexFormation === -1) {
@@ -560,6 +667,8 @@ addFieldBtn.addEventListener("click", () => {
 });
 
 // 🧾 Afficher les champs dans le DOM
+
+
 function afficherChamps() {
   formFieldsContainer.innerHTML = "";
   champsFormulaire.forEach((champ, index) => {
@@ -588,6 +697,8 @@ function afficherChamps() {
     formFieldsContainer.appendChild(fieldBlock);
   });
 }
+
+
 
 // Fonctions pour mettre à jour les champs
 function changerTypeChamp(index, value) {
@@ -622,6 +733,8 @@ function changerRequired(index, value) {
 }
 
 
+
+// ------------------ Enregistrement du formulaire ------------------
 saveFormBtn.addEventListener("click", async () => {
   const nom = document.getElementById("formName").value.trim();
   if (!nom) return alert("Le nom du formulaire est requis !");
@@ -711,6 +824,8 @@ async function chargerListeFormulaires() {
 
       tbody.appendChild(tr);
     });
+
+
 
     // Écouteurs sur les boutons après création
     document.querySelectorAll(".edit-form-btn").forEach(btn => {
@@ -914,7 +1029,7 @@ document.getElementById('passwordChangeForm').addEventListener('submit', async (
 
 
 
-
+// ------------------ Navigation dans l'interface ------------------
 
 document.addEventListener('DOMContentLoaded', () => {
   const sections = document.querySelectorAll('.main-section');
@@ -950,3 +1065,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+
+// ------------------ Exporter PDF ------------------
+function exporterPDF(inscrit) {
+  const doc = new jsPDF();
+  const date = new Date(inscrit.createdAt).toLocaleDateString();
+  const donnees = inscrit.donnees || [];
+  let y = 10;
+
+  doc.setFontSize(16);
+  doc.text("Fiche d'inscription", 10, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  const lignes = [
+    ["Nom et Prénom", getValeurParLabel(donnees, "nom")],
+    ["Date de naissance", getValeurParLabel(donnees, "naissance")],
+    ["Formation", getValeurParLabel(donnees, "formation")],
+    ["Date de formation", getValeurParLabel(donnees, "date formation")],
+    ["Activité", getValeurParLabel(donnees, "activite")],
+    ["Téléphone", getValeurParLabel(donnees, "téléphone")],
+    ["WhatsApp", getValeurParLabel(donnees, "whatsapp")],
+    ["Statut", inscrit.statut || "En attente"],
+    ["Date d'inscription", date]
+  ];
+
+  lignes.forEach(([label, valeur]) => {
+    doc.text(`${label} : ${valeur}`, 10, y);
+    y += 8;
+  });
+
+  y += 5;
+  doc.setFontSize(10);
+  doc.text("Document généré automatiquement. Merci de vérifier les informations.", 10, y);
+
+  const nom = getValeurParLabel(donnees, "nom") || "etudiant";
+  doc.save(`fiche_inscription_${nom}.pdf`);
+}
+
+
+
+
+// Activer le bouton PDF pour l'étudiant sélectionné
+
+function activerBoutonPDF(id) {
+  const btnPDF = document.getElementById('btnDownloadPDF');
+  btnPDF.disabled = false;
+
+  btnPDF.onclick = async () => {
+    try {
+      const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${id}`);
+      const data = await res.json();
+      exporterPDF(data);
+    } catch (err) {
+      console.error("Erreur export PDF", err);
+      alert("Impossible d'exporter le PDF.");
+    }
+  };
+}
+
+
+// ------------------ Formater les labels des champs ------------------
+function formaterLabel(champ) {
+  switch (champ.toLowerCase()) {
+    case 'nom':
+    case 'nom_prenom':
+      return 'Nom & Prénom';
+    case 'formation':
+      return 'Formation';
+    case 'telephone':
+    case 'téléphone':
+      return 'Téléphone';
+    default:
+      return champ.charAt(0).toUpperCase() + champ.slice(1);
+  }
+}
+
+
+
+
+
