@@ -375,25 +375,15 @@ async function majStatusChart(chart) {
 // Mettre à jour le graphique des formations
 
 async function majFormationsChart(chart) {
-  const indexFormation = champsFormulaireActif.findIndex(champ =>
-    champ.label?.toLowerCase().includes("formation")
-  );
-
-  if (indexFormation === -1) {
-    console.warn("Aucun champ de formation trouvé");
-    return;
-  }
-
   try {
     const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
     const inscrits = await res.json();
 
-    // Grouper les inscriptions par valeur de formation
     const compteur = {};
 
     inscrits.forEach(inscrit => {
-      const valeur = inscrit.donnees[`champ_${indexFormation}`]?.trim() || "Inconnue";
-      compteur[valeur] = (compteur[valeur] || 0) + 1;
+      const formation = extraireValeurDynamique(inscrit, 'formation')?.trim() || "Inconnue";
+      compteur[formation] = (compteur[formation] || 0) + 1;
     });
 
     const labels = Object.keys(compteur);
