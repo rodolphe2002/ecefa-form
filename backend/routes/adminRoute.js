@@ -107,4 +107,7 @@ router.get('/dashboard', verifierToken, (req, res) => {
   res.json({ message: `Bienvenue ${req.user.username}` });
 });
 
-module.exports = { router, verifierToken };
+// module.exports = { router, verifierToken };
+
+module.exports = router;
+

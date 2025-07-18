@@ -36,8 +36,12 @@ mongoose.connect(MONGO_URI)
 
 
 
-    const { router: adminRoute } = require('./routes/adminRoute');
+    // const { router: adminRoute } = require('./routes/adminRoute');
+    // app.use('/api/admin', adminRoute);
+    
+    const adminRoute = require('./routes/adminRoute');
     app.use('/api/admin', adminRoute);
+
 
     app.use('/api/formulaires', require('./routes/formulairesRoute'));
 

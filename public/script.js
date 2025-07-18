@@ -1,5 +1,12 @@
-const BASE_URL = "http://localhost:3000";
-// const BASE_URL = "https://ecefa-form.onrender.com";
+// const BASE_URL = "http://localhost:3000";
+// // const BASE_URL = "https://ecefa-form.onrender.com";
+
+// Exemple automatique pour BASE_URL
+const BASE_URL = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://ecefa-form.onrender.com";
+
+  
 
 // 🌟 Animation de bulles de fond
 const bgAnimation = document.getElementById('bgAnimation');

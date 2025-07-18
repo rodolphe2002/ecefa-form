@@ -20,15 +20,14 @@ function extraireChamp(etudiant, labelRecherche, champsFormulaire) {
   return etudiant.donnees?.[cle] || '—';
 }
 
-// 📌 Génération PDF liste
+
+
+
+// 📎 Génération PDF liste
 router.get('/pdf-liste', async (req, res) => {
   try {
-    const formulaireActif = await Formulaire.findOne({ actif: true });
-    const champsFormulaireActif = formulaireActif?.champs || [];
-
     const { formation, debut, fin } = req.query;
     const filter = {};
-
     if (formation) filter['donnees.formation'] = formation;
     if (debut || fin) {
       filter.createdAt = {};
@@ -39,20 +38,18 @@ router.get('/pdf-liste', async (req, res) => {
     const inscrits = await Etudiant.find(filter).sort({ createdAt: -1 });
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
-
-    const filename = formation
-      ? `liste_${formation.toLowerCase().replace(/\s+/g, '_')}.pdf`
-      : 'liste_inscriptions.pdf';
-
+    const filename = 'liste_inscriptions.pdf';
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=${filename}`);
     doc.pipe(res);
 
+    // Titre
     let titre = "Liste des inscriptions";
     if (formation) titre += ` – ${formation}`;
     doc.fontSize(16).fillColor('#2c3e50').text(titre, { align: 'center' });
     doc.moveDown();
 
+    // Filtres appliqués
     doc.fontSize(10).fillColor('#555');
     if (formation) doc.text(`Formation : ${formation}`);
     if (debut) doc.text(`À partir du : ${new Date(debut).toLocaleDateString()}`);
@@ -60,41 +57,66 @@ router.get('/pdf-liste', async (req, res) => {
     doc.moveDown();
 
     let y = doc.y;
+    const colonnes = [
+      { label: 'Nom & Prénom', keys: ['nom_prenom', 'nom', 'prenom', 'nomprenom'] },
+      { label: 'Formation', keys: ['formation', 'nom_formation'] },
+      { label: "Date d'inscription", keys: [] },
+      { label: 'Téléphone', keys: ['telephone', 'tel', 'numéro', 'numero'] },
+      { label: 'Statut', keys: [] }
+    ];
+    const colWidths = [130, 100, 90, 100, 80];
+    const rowHeight = 30;
+    const startX = 50;
 
-    // En-têtes du tableau
-    doc.rect(50, y, 500, 20).fill('#3498db');
-    doc.fillColor('#fff').fontSize(11);
-    doc.text("Nom", 52, y + 5, { continued: true });
-    doc.text("Formation", 160, y + 5, { continued: true });
-    doc.text("Téléphone", 300, y + 5, { continued: true });
-    doc.text("Statut", 400, y + 5, { continued: true });
-    doc.text("Date", 470, y + 5);
-    y += 25;
+    // En-tête du tableau
+    let x = startX;
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#3498db');
+    colonnes.forEach((col, idx) => {
+      doc.rect(x, y, colWidths[idx], rowHeight).fill('#3498db');
+      doc.fillColor('#fff').text(col.label, x + 5, y + 9, { width: colWidths[idx] - 10 });
+      x += colWidths[idx];
+    });
+    y += rowHeight;
 
+    // Lignes du tableau
     inscrits.forEach((etudiant, index) => {
-      const nom = extraireChamp(etudiant, 'Nom & Prénom', champsFormulaireActif);
-      const formationValue = extraireChamp(etudiant, 'Formation', champsFormulaireActif);
-      const telephone = extraireChamp(etudiant, 'Téléphone', champsFormulaireActif);
-      const statut = etudiant.statut || 'En attente';
-      const date = new Date(etudiant.createdAt).toLocaleDateString();
+      x = startX;
+      doc.font('Helvetica').fontSize(10);
+      colonnes.forEach((col, idx) => {
+        // Alternance de couleur de fond
+        doc.rect(x, y, colWidths[idx], rowHeight).fill(index % 2 === 0 ? '#ecf0f1' : '#ffffff');
+        doc.fillColor('#000');
 
-      doc.rect(50, y, 500, 20).fill(index % 2 === 0 ? '#ecf0f1' : '#ffffff');
-      doc.fillColor('#000').fontSize(10);
-      doc.text(nom, 52, y + 5, { continued: true });
-      doc.text(formationValue, 160, y + 5, { continued: true });
-      doc.text(telephone, 300, y + 5, { continued: true });
-      doc.text(statut, 400, y + 5, { continued: true });
-      doc.text(date, 470, y + 5);
-      y += 22;
+        let valeur = '—';
+        if (col.label === "Date d'inscription") {
+          valeur = etudiant.createdAt ? new Date(etudiant.createdAt).toLocaleDateString() : '—';
+        } else if (col.label === 'Statut') {
+          valeur = etudiant.statut || 'En attente';
+        } else {
+          for (const k of col.keys) {
+            if (etudiant.donnees && etudiant.donnees[k]) {
+              valeur = etudiant.donnees[k];
+              break;
+            }
+          }
+        }
 
+        // Centrage vertical (ajusté avec la taille de la police)
+        doc.text(valeur, x + 5, y + 9, { width: colWidths[idx] - 10, height: rowHeight, align: 'left' });
+        x += colWidths[idx];
+      });
+
+      y += rowHeight;
       if (y > 750) {
         doc.addPage();
         y = 50;
       }
     });
 
-    doc.rect(50, y + 10, 500, 20).fill('#f9e79f');
-    doc.fillColor('#000').fontSize(10).text(`Total : ${inscrits.length} inscrit(s)`, 52, y + 15);
+    // Pied du document
+    doc.moveDown(2);
+    doc.fontSize(10).fillColor('#888').text(`Total : ${inscrits.length} inscrit(s)`, { align: 'left' });
+    doc.fontSize(10).fillColor('#888').text('Document généré automatiquement. Merci de vérifier les informations.', { align: 'center' });
 
     doc.end();
   } catch (err) {
@@ -102,6 +124,9 @@ router.get('/pdf-liste', async (req, res) => {
     res.status(500).send("Erreur serveur lors de la génération du PDF.");
   }
 });
+
+
+
 
 // ✅ POST /inscription
 // ✅ POST /inscription
@@ -281,32 +306,63 @@ router.get('/fiche/:id', async (req, res) => {
     const etudiant = await Etudiant.findById(req.params.id);
     if (!etudiant) return res.status(404).send("Étudiant non trouvé");
 
+    // Récupérer tous les champs dynamiques via Formulaire
+    const formulaire = await Formulaire.findOne().sort({ createdAt: -1 }); // le plus récent
+    const champs = formulaire?.champs || [];
+
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename=fiche_etudiant.pdf');
     doc.pipe(res);
 
+    // Titre
     doc.fontSize(20).fillColor('#3498db').text("Fiche d'inscription", { align: 'center' });
     doc.moveDown();
 
     doc.fontSize(12).fillColor('#000');
-    doc.text(`Nom et Prénom : ${etudiant.nom_prenom}`);
-    doc.text(`Date de naissance : ${etudiant.date_naissance || '—'}`);
-    doc.text(`Formation : ${etudiant.formation || '—'}`);
-    doc.text(`Date de formation : ${etudiant.date_formation || '—'}`);
-    doc.text(`Activité : ${etudiant.activite || '—'}`);
-    doc.text(`Téléphone : ${etudiant.telephone}`);
-    doc.text(`WhatsApp : ${etudiant.whatsapp || '—'}`);
+
+    // Affichage dynamique des champs depuis etudiant.donnees
+    champs.forEach(champ => {
+      const cle = champ.key;
+      const label = champ.label || cle;
+      const valeur = etudiant.donnees?.[cle] ?? '—';
+      doc.text(`${label} : ${valeur}`);
+    });
+
+    // Ajout du statut et date d’inscription
     doc.text(`Statut : ${etudiant.statut || 'En attente'}`);
     doc.text(`Date d'inscription : ${new Date(etudiant.createdAt).toLocaleDateString()}`);
+
+    // Footer
     doc.moveDown(2);
     doc.fontSize(10).fillColor('#888').text('Document généré automatiquement. Merci de vérifier les informations.', { align: 'center' });
+
     doc.end();
   } catch (err) {
     console.error("Erreur PDF :", err);
     res.status(500).send("Erreur serveur lors de la génération du PDF.");
   }
 });
+
+
+// ✅ Confirmer un inscrit (statut = Confirmée via PATCH)
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { statut } = req.body;
+
+    const updated = await Etudiant.findByIdAndUpdate(id, { statut }, { new: true });
+
+    if (!updated) return res.status(404).json({ message: "Inscription non trouvée" });
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Erreur de mise à jour du statut :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 // ⚠️ Route par ID (toujours à la fin)
 router.get('/:id', async (req, res) => {
@@ -318,5 +374,9 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 });
+
+
+
+
 
 module.exports = router;

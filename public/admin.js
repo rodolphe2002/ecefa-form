@@ -1,5 +1,11 @@
-const BASE_URL = "http://localhost:3000";
-// const BASE_URL = "https://ecefa-form.onrender.com";
+// const BASE_URL = "http://localhost:3000";
+// // const BASE_URL = "https://ecefa-form.onrender.com";
+// // const BASE_URL = window.location.origin; // Utiliser l'URL de la page actuelle
+
+// Exemple automatique pour BASE_URL
+const BASE_URL = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://ecefa-form.onrender.com";
 
 
 // ------------------ Initialisation ------------------
@@ -13,6 +19,76 @@ document.addEventListener("DOMContentLoaded", async () => {
   await chargerListeFormulaires();
 
 });
+
+
+
+// ------------------ Menu admin ------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const profile = document.querySelector(".user-profile");
+  const dropdown = document.getElementById("adminDropdown");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  profile.addEventListener("click", () => {
+    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!profile.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = "none";
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "/connectAdmin.html";
+  });
+});
+
+
+
+// ------------------ Navigation dans l'interface ------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sections = document.querySelectorAll('.main-section');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  function showSection(idToShow) {
+    sections.forEach(section => {
+      section.style.display = (section.id === idToShow) ? 'block' : 'none';
+    });
+
+    // Met à jour la classe active sur les nav-items
+    navLinks.forEach(link => {
+      const parentNavItem = link.closest('.nav-item');
+      if (link.getAttribute('href') === '#' + idToShow) {
+        parentNavItem.classList.add('active');
+      } else {
+        parentNavItem.classList.remove('active');
+      }
+    });
+  }
+
+  // Au départ, on affiche la section inscriptions par exemple
+  showSection('table-inscription');
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const targetId = link.getAttribute('href').substring(1);
+      showSection(targetId);
+
+      // Optionnel : Scroll vers le haut du contenu principal
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+});
+
+
+
+// ------------------ Session Gestion Fonction utilitaires ------------------
+// ---------------------------------------------------------------------
+
+
 
 // ------------------ fonction utilitaire pour générer un champ dynamique ------------------
 
@@ -39,9 +115,6 @@ function getValeurParLabel(donnees, motCle) {
   );
   return champ ? champ.valeur : '—';
 }
-
-
-
 
 
 
@@ -79,7 +152,7 @@ const motsCles = {
 };
 
 
-
+// Fonction pour extraire la valeur d'un champ dynamique en utilisant des variantes de mots-clés
 
 
 function extraireValeurDynamique(inscrit, clePrincipale) {
@@ -99,7 +172,7 @@ function extraireValeurDynamique(inscrit, clePrincipale) {
 }
 
 
-
+// ------------------ Variables globales ------------------
 
 let idEtudiantSelectionne = null;
 
@@ -140,6 +213,14 @@ async function fetchWithAuth(url, options = {}) {
     throw err;
   }
 }
+
+
+
+
+
+// ------------------ Session Gestion design front ------------------
+// ---------------------------------------------------------------------
+
 
 // ------------------ Animation de fond ------------------
 const bgAnimation = document.getElementById('bgAnimation');
@@ -188,6 +269,8 @@ document.querySelectorAll('tbody').forEach(tbody => {
     if (row) row.style.transform = 'translateX(0)';
   });
 });
+
+
 
 // ------------------ Graphiques ------------------
 const formationsCtx = document.getElementById('formationsChart').getContext('2d');
@@ -265,6 +348,15 @@ const statusChart = new Chart(statusCtx, {
   }
 });
 
+
+
+
+
+// ------------------ Session Gestion des statistiques ------------------
+// ---------------------------------------------------------------------
+
+// Mettre à jour les graphiques avec les données actuelles
+
 async function majStatusChart(chart) {
   try {
     const res = await fetchWithAuth(`${BASE_URL}/api/inscription/stats`);
@@ -278,6 +370,9 @@ async function majStatusChart(chart) {
     console.error("Erreur maj graphique doughnut", err);
   }
 }
+
+
+// Mettre à jour le graphique des formations
 
 async function majFormationsChart(chart) {
   const indexFormation = champsFormulaireActif.findIndex(champ =>
@@ -312,68 +407,6 @@ async function majFormationsChart(chart) {
   }
 }
 
-// chager les inscriptions dans le tableau
-
-async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateDebut = "", dateFin = "") {
-  const tbody = document.getElementById("inscriptionsBody");
-  tbody.innerHTML = "";
-
-  try {
-    const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
-    const inscrits = await res.json();
-
-    const resultat = inscrits.filter(inscrit => {
-      const nom = extraireValeurDynamique(inscrit, 'nom');
-      const tel = extraireValeurDynamique(inscrit, 'téléphone');
-      const formation = extraireValeurDynamique(inscrit, 'formation');
-
-      const nomOk = nom.toLowerCase().includes(filtreTexte.toLowerCase()) ||
-        tel.toLowerCase().includes(filtreTexte.toLowerCase());
-
-      const formationOk = !filtreFormation || formation === filtreFormation;
-
-      const dateInscription = new Date(inscrit.createdAt);
-      const debutOk = !dateDebut || new Date(dateDebut) <= dateInscription;
-      const finOk = !dateFin || dateInscription <= new Date(dateFin);
-
-      return nomOk && formationOk && debutOk && finOk;
-    });
-
-    resultat.forEach(inscrit => {
-      const nom = extraireValeurDynamique(inscrit, 'nom');
-      const tel = extraireValeurDynamique(inscrit, 'téléphone');
-      const formation = extraireValeurDynamique(inscrit, 'formation');
-      const statut = inscrit.statut || 'En attente';
-      const date = new Date(inscrit.createdAt).toLocaleDateString();
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${nom}</td>
-        <td>${formation}</td>
-        <td>${date}</td>
-        <td>${tel}</td>
-        <td><span class="status ${statut === 'Confirmée' ? 'confirmed' : 'pending'}">${statut}</span></td>
-        <td class="actions">
-          <button class="action-btn view" data-id="${inscrit._id}"><i class="fas fa-eye"></i></button>
-          <button class="action-btn edit" data-id="${inscrit._id}"><i class="fas fa-edit"></i></button>
-        </td>
-      `;
-
-      tr.addEventListener('dblclick', () => {
-        idEtudiantSelectionne = inscrit._id;
-        activerBoutonPDF(inscrit._id);
-        document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
-        tr.classList.add('selected');
-      });
-
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("Erreur de chargement des inscriptions :", err);
-  }
-}
-
-
 // ------------------ Statistiques ------------------
 async function chargerStatistiques() {
   try {
@@ -403,50 +436,116 @@ async function chargerStatistiques() {
 
 
 
-// ------------------ Barre de recherche ------------------
-document.getElementById("searchInput").addEventListener("input", (e) => {
-  const filtre = e.target.value;
-  chargerInscriptions(filtre);
-});
 
-// ------------------ Bouton PDF ------------------
-const btnDownloadPDF = document.getElementById("btnDownloadPDF");
 
-function activerBoutonPDF(id) {
-  idEtudiantSelectionne = id;
-  btnDownloadPDF.disabled = false;
-}
 
-btnDownloadPDF.addEventListener("click", () => {
-  if (idEtudiantSelectionne) {
-    window.open(`${BASE_URL}/api/inscription/fiche/${idEtudiantSelectionne}`, "_blank");
-  }
-});
 
-// ------------------ Menu admin ------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const profile = document.querySelector(".user-profile");
-  const dropdown = document.getElementById("adminDropdown");
-  const logoutBtn = document.getElementById("logoutBtn");
 
-  profile.addEventListener("click", () => {
-    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+// ------------------ Session Gestion des inscriptions ------------------
+// ---------------------------------------------------------------------
+
+
+// chager les inscriptions dans le tableau
+
+async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateDebut = "", dateFin = "") {
+  const tbody = document.getElementById("inscriptionsBody");
+  tbody.innerHTML = "";
+
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
+    const inscrits = await res.json();
+
+    const resultat = inscrits.filter(inscrit => {
+      const nom = extraireValeurDynamique(inscrit, 'nom');
+      const tel = extraireValeurDynamique(inscrit, 'téléphone');
+      const formation = extraireValeurDynamique(inscrit, 'formation');
+
+      const nomOk = nom.toLowerCase().includes(filtreTexte.toLowerCase()) ||
+        tel.toLowerCase().includes(filtreTexte.toLowerCase());
+
+      const formationOk = !filtreFormation || formation === filtreFormation;
+
+      const dateInscription = new Date(inscrit.createdAt);
+      const debutOk = !dateDebut || new Date(dateDebut) <= dateInscription;
+      const finOk = !dateFin || dateInscription <= new Date(dateFin);
+
+      return nomOk && formationOk && debutOk && finOk;
+    });
+resultat.forEach(inscrit => {
+  const nom = extraireValeurDynamique(inscrit, 'nom');
+  const tel = extraireValeurDynamique(inscrit, 'téléphone');
+  const formation = extraireValeurDynamique(inscrit, 'formation');
+  const statut = inscrit.statut || 'En attente';
+  const date = new Date(inscrit.createdAt).toLocaleDateString();
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${nom}</td>
+    <td>${formation}</td>
+    <td>${date}</td>
+    <td>${tel}</td>
+    <td><span class="status ${statut === 'Confirmée' ? 'confirmed' : 'pending'}">${statut}</span></td>
+    <td class="actions">
+      <button class="action-btn view" data-id="${inscrit._id}"><i class="fas fa-eye"></i></button>
+      <button class="action-btn edit" data-id="${inscrit._id}"><i class="fas fa-edit"></i></button>
+    </td>
+  `;
+
+  // ✅ Clic pour sélectionner (double clic)
+  tr.addEventListener('dblclick', () => {
+    idEtudiantSelectionne = inscrit._id;
+    activerBoutonPDF(inscrit._id);
+    document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+    tr.classList.add('selected');
   });
 
-  document.addEventListener("click", (e) => {
-    if (!profile.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.style.display = "none";
+  // ✅ Clic sur l’œil = changer le statut
+  tr.querySelector(".view").addEventListener("click", async () => {
+    try {
+      const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${inscrit._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ statut: "Confirmée" }),
+      });
+
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour du statut");
+
+      // Mettre à jour l’affichage local
+      tr.querySelector(".status").textContent = "Confirmée";
+      tr.querySelector(".status").classList.remove("pending");
+      tr.querySelector(".status").classList.add("confirmed");
+    } catch (err) {
+      console.error("❌ Erreur changement de statut :", err);
+      alert("Erreur lors de la confirmation du statut");
     }
   });
 
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "/connectAdmin.html";
-  });
+  tbody.appendChild(tr);
 });
+
+  } catch (err) {
+    console.error("Erreur de chargement des inscriptions :", err);
+  }
+}
+
+
+
+
+
+
+
+
 
 // ------------------ MODAL EDITION ------------------
 const modal = document.getElementById('editModal');
+modal.addEventListener('click', (e) => {
+  if (e.target.closest('#closeEditModal')) {
+    modal.style.display = 'none';
+  }
+});
+
 const closeModal = document.getElementById('closeEditModal');
 const editForm = document.getElementById('editForm');
 let currentEditId = null;
@@ -525,9 +624,8 @@ editForm.addEventListener('submit', async (e) => {
   }
 });
 
+// ------------------ Enregistrement des modifications du formulaire ------------------
 
-
-// ------------------ Enregistrement des modifications ------------------
 
 document.getElementById('editForm').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -556,81 +654,11 @@ document.getElementById('editForm').addEventListener('submit', async function (e
 });
 
 
-// ------------------ Filtrage ------------------
-document.getElementById("btnFiltrer").addEventListener("click", () => {
-  const formation = document.getElementById("filtreFormation").value;
-  const dateDebut = document.getElementById("dateDebut").value;
-  const dateFin = document.getElementById("dateFin").value;
-  const filtreTexte = document.getElementById("searchInput").value;
-
-  chargerInscriptions(filtreTexte, formation, dateDebut, dateFin);
-});
-
-// ------------------ PDF Liste filtrée ------------------
-document.getElementById("btnPDFFiltre").addEventListener("click", () => {
-  const formation = document.getElementById("filtreFormation").value;
-  const dateDebut = document.getElementById("dateDebut").value;
-  const dateFin = document.getElementById("dateFin").value;
-
-  const url = new URL(`${BASE_URL}/api/inscription/pdf-liste`);
-  if (formation) url.searchParams.append("formation", formation);
-  if (dateDebut) url.searchParams.append("debut", dateDebut);
-  if (dateFin) url.searchParams.append("fin", dateFin);
-
-  window.open(url.toString(), "_blank");
-});
-
-
-// ------------------ remplir filtre ------------------
-
-async function remplirFiltreFormations() {
-  const select = document.getElementById("filtreFormation");
-  select.innerHTML = `<option value="">Toutes les formations</option>`;
 
 
 
-  // 🔍 Trouver l’index du champ "formation"
-
-
-  const indexFormation = champsFormulaireActif.findIndex(champ =>
-    champ.label?.toLowerCase().includes("formation")
-  );
-
-
-  if (indexFormation === -1) {
-    console.warn("Aucun champ avec key='formation' trouvé");
-    return;
-  }
-
-  try {
-    const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
-    const inscrits = await res.json();
-
-    const formationsSet = new Set();
-
-    inscrits.forEach(inscrit => {
-      const valeur = inscrit.donnees[`champ_${indexFormation}`];
-      if (valeur) formationsSet.add(valeur.trim());
-    });
-
-    [...formationsSet].sort().forEach(formation => {
-      const option = document.createElement("option");
-      option.value = formation;
-      option.textContent = formation;
-      select.appendChild(option);
-    });
-  } catch (err) {
-    console.error("Erreur chargement des formations pour le filtre", err);
-  }
-}
-
-
-
-
-
-
-
-
+// ------------------ Session Gestion du formulaire ------------------
+// ---------------------------------------------------------------------
 
 
 
@@ -652,6 +680,8 @@ const typesDisponibles = [
   { value: "select", label: "Liste déroulante" }
 ];
 
+
+
 // ➕ Ajouter un champ
 addFieldBtn.addEventListener("click", () => {
   const fieldIndex = champsFormulaire.length;
@@ -666,9 +696,8 @@ addFieldBtn.addEventListener("click", () => {
   afficherChamps();
 });
 
+
 // 🧾 Afficher les champs dans le DOM
-
-
 function afficherChamps() {
   formFieldsContainer.innerHTML = "";
   champsFormulaire.forEach((champ, index) => {
@@ -773,10 +802,6 @@ saveFormBtn.addEventListener("click", async () => {
   }
 });
 
-
-
-
-
 // ------------------ Gestion des formulaires (affichage) ------------------
 
 window.changerLabel = changerLabel;
@@ -787,19 +812,7 @@ window.supprimerChamp = supprimerChamp;
 window.changerTypeChamp = changerTypeChamp;
 
 
-
-
-
-
-
-
-
-
-
-
 // Charger la liste des formulaires depuis l’API
-
-
 async function chargerListeFormulaires() {
   const tbody = document.querySelector("#formListTable tbody");
   tbody.innerHTML = "";
@@ -860,8 +873,6 @@ async function chargerListeFormulaires() {
 
 
 // Charger le formulaire pour édition
-
-
 async function chargerFormulairePourEdition(id) {
   try {
     const res = await fetchWithAuth(`${BASE_FORM_API}/id/${id}`);
@@ -887,8 +898,6 @@ async function chargerFormulairePourEdition(id) {
 
 
 // Modifier le bouton "Enregistrer" pour gérer la création ou mise à jour
-
-
 let currentFormulaireId = null;
 
 saveFormBtn.addEventListener("click", async () => {
@@ -938,14 +947,7 @@ saveFormBtn.addEventListener("click", async () => {
 });
 
 
-
-
-
-
-
-
 // Activer ou désactiver un formulaire
-
 async function activerDesactiverFormulaire(id) {
   try {
     // Idéalement backend : un PATCH /api/formulaires/:id/actif
@@ -963,8 +965,6 @@ async function activerDesactiverFormulaire(id) {
 
 
 // Supprimer un formulaire
-
-
 async function supprimerFormulaire(id) {
   try {
     const res = await fetchWithAuth(`${BASE_FORM_API}/${id}`, { method: 'DELETE' });
@@ -982,6 +982,17 @@ async function supprimerFormulaire(id) {
 
 
 
+
+
+
+
+
+
+
+// ------------------ Session Gestion des mots de passe ------------------
+// ---------------------------------------------------------------------
+
+
 //  ------------------ Changement de mot de passe ------------------
 
 
@@ -995,7 +1006,7 @@ document.getElementById('passwordChangeForm').addEventListener('submit', async (
 
   try {
     const token = localStorage.getItem('token'); // ⬅️ Assure-toi de stocker le token au login
-    const response = await fetch('/api/admin/change-password', {
+    const response = await fetch(`${BASE_URL}/api/admin/change-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1027,43 +1038,47 @@ document.getElementById('passwordChangeForm').addEventListener('submit', async (
 
 
 
+// ------------------ Session Gestion PDF et filtre------------------
+// ---------------------------------------------------------------------
 
 
-// ------------------ Navigation dans l'interface ------------------
+// ------------------ Bouton PDF ------------------
+const btnDownloadPDF = document.getElementById("btnDownloadPDF");
 
-document.addEventListener('DOMContentLoaded', () => {
-  const sections = document.querySelectorAll('.main-section');
-  const navLinks = document.querySelectorAll('.nav-link');
+function activerBoutonPDF(id) {
+  idEtudiantSelectionne = id;
+  btnDownloadPDF.disabled = false;
+}
 
-  function showSection(idToShow) {
-    sections.forEach(section => {
-      section.style.display = (section.id === idToShow) ? 'block' : 'none';
-    });
-
-    // Met à jour la classe active sur les nav-items
-    navLinks.forEach(link => {
-      const parentNavItem = link.closest('.nav-item');
-      if (link.getAttribute('href') === '#' + idToShow) {
-        parentNavItem.classList.add('active');
-      } else {
-        parentNavItem.classList.remove('active');
-      }
-    });
+btnDownloadPDF.addEventListener("click", () => {
+  if (idEtudiantSelectionne) {
+    window.open(`${BASE_URL}/api/inscription/fiche/${idEtudiantSelectionne}`, "_blank");
   }
+});
 
-  // Au départ, on affiche la section inscriptions par exemple
-  showSection('table-inscription');
 
-  navLinks.forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      const targetId = link.getAttribute('href').substring(1);
-      showSection(targetId);
+// ------------------ Filtrage ------------------
+document.getElementById("btnFiltrer").addEventListener("click", () => {
+  const formation = document.getElementById("filtreFormation").value;
+  const dateDebut = document.getElementById("dateDebut").value;
+  const dateFin = document.getElementById("dateFin").value;
+  const filtreTexte = document.getElementById("searchInput").value;
 
-      // Optionnel : Scroll vers le haut du contenu principal
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  });
+  chargerInscriptions(filtreTexte, formation, dateDebut, dateFin);
+});
+
+// ------------------ PDF Liste filtrée ------------------
+document.getElementById("btnPDFFiltre").addEventListener("click", () => {
+  const formation = document.getElementById("filtreFormation").value;
+  const dateDebut = document.getElementById("dateDebut").value;
+  const dateFin = document.getElementById("dateFin").value;
+
+  const url = new URL(`${BASE_URL}/api/inscription/pdf-liste`);
+  if (formation) url.searchParams.append("formation", formation);
+  if (dateDebut) url.searchParams.append("debut", dateDebut);
+  if (dateFin) url.searchParams.append("fin", dateFin);
+
+  window.open(url.toString(), "_blank");
 });
 
 
@@ -1107,6 +1122,7 @@ function exporterPDF(inscrit) {
 
 
 
+
 // Activer le bouton PDF pour l'étudiant sélectionné
 
 function activerBoutonPDF(id) {
@@ -1120,7 +1136,7 @@ function activerBoutonPDF(id) {
       exporterPDF(data);
     } catch (err) {
       console.error("Erreur export PDF", err);
-      alert("Impossible d'exporter le PDF.");
+      // Je supprime l'alerte à la ligne 1156
     }
   };
 }
@@ -1141,6 +1157,56 @@ function formaterLabel(champ) {
       return champ.charAt(0).toUpperCase() + champ.slice(1);
   }
 }
+
+
+// ------------------ remplir filtre ------------------
+
+async function remplirFiltreFormations() {
+  const select = document.getElementById("filtreFormation");
+  select.innerHTML = `<option value="">Toutes les formations</option>`;
+
+  // 🔍 On récupère la liste des étudiants
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
+    const inscrits = await res.json();
+
+    // 🔍 On cherche dynamiquement la key du champ "formation"
+    const champFormation = champsFormulaireActif.find(champ =>
+      champ.label?.toLowerCase().includes("formation") ||
+      champ.key?.toLowerCase().includes("formation")
+    );
+
+    if (!champFormation) {
+      console.warn("Aucun champ lié à la formation trouvé.");
+      return;
+    }
+
+    const keyFormation = champFormation.key;
+
+    const formationsSet = new Set();
+    inscrits.forEach(inscrit => {
+      const valeur = inscrit.donnees?.[keyFormation];
+      if (valeur) formationsSet.add(valeur.trim());
+    });
+
+    [...formationsSet].sort().forEach(formation => {
+      const option = document.createElement("option");
+      option.value = formation;
+      option.textContent = formation;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Erreur chargement des formations pour le filtre", err);
+  }
+}
+
+
+
+// ------------------ Barre de recherche ------------------
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  const filtre = e.target.value;
+  chargerInscriptions(filtre);
+});
 
 
 
