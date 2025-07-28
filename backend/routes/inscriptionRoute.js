@@ -35,75 +35,85 @@ router.get('/pdf-liste', async (req, res) => {
       if (fin) filter.createdAt.$lte = new Date(fin);
     }
 
-    const inscrits = await Etudiant.find(filter).sort({ createdAt: -1 });
+    // 🔹 Récupérer les inscriptions
+    const inscritsBruts = await Etudiant.find(filter).sort({ createdAt: -1 });
 
+    // 🔹 Récupérer le formulaire actif
+    const formulaire = await Formulaire.findOne({ actif: true });
+    const champsFormulaire = formulaire?.champs || [];
+    const keysFormulaireActif = champsFormulaire.map(c => c.key);
+
+    // 🔹 Filtrer les inscrits pour ne garder que ceux correspondant au formulaire actif
+    const inscrits = inscritsBruts.filter(inscrit => {
+      const keysInscrit = Object.keys(inscrit.donnees || {});
+      return keysFormulaireActif.every(key => keysInscrit.includes(key));
+    });
+
+    // 🔹 Préparer le document PDF
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
     const filename = 'liste_inscriptions.pdf';
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=${filename}`);
     doc.pipe(res);
 
-    // Titre
+    // 🔹 Titre
     let titre = "Liste des inscriptions";
     if (formation) titre += ` – ${formation}`;
     doc.fontSize(16).fillColor('#2c3e50').text(titre, { align: 'center' });
     doc.moveDown();
 
-    // Filtres appliqués
+    // 🔹 Filtres
     doc.fontSize(10).fillColor('#555');
     if (formation) doc.text(`Formation : ${formation}`);
     if (debut) doc.text(`À partir du : ${new Date(debut).toLocaleDateString()}`);
     if (fin) doc.text(`Jusqu'au : ${new Date(fin).toLocaleDateString()}`);
     doc.moveDown();
 
-    let y = doc.y;
+    // 🔹 Colonnes dynamiques + fixes
     const colonnes = [
-      { label: 'Nom & Prénom', keys: ['nom_prenom', 'nom', 'prenom', 'nomprenom'] },
-      { label: 'Formation', keys: ['formation', 'nom_formation'] },
-      { label: "Date d'inscription", keys: [] },
-      { label: 'Téléphone', keys: ['telephone', 'tel', 'numéro', 'numero'] },
-      { label: 'Statut', keys: [] }
+      ...champsFormulaire.map(champ => ({
+        label: champ.label || champ.key,
+        key: champ.key
+      })),
+      { label: "Date d'inscription", key: '__createdAt' },
+      { label: "Statut", key: '__statut' }
     ];
-    const colWidths = [130, 100, 90, 100, 80];
-    const rowHeight = 30;
-    const startX = 50;
 
-    // En-tête du tableau
-    let x = startX;
-    doc.font('Helvetica-Bold').fontSize(11).fillColor('#3498db');
-    colonnes.forEach((col, idx) => {
-      doc.rect(x, y, colWidths[idx], rowHeight).fill('#3498db');
-      doc.fillColor('#fff').text(col.label, x + 5, y + 9, { width: colWidths[idx] - 10 });
-      x += colWidths[idx];
+    const colWidth = Math.floor(500 / colonnes.length);
+    const rowHeight = 25;
+    let x = 40;
+    let y = doc.y;
+
+    // 🔹 En-têtes
+    doc.font('Helvetica-Bold').fontSize(10);
+    colonnes.forEach(col => {
+      doc.rect(x, y, colWidth, rowHeight).fill('#3498db');
+      doc.fillColor('#fff').text(col.label, x + 5, y + 7, { width: colWidth - 10 });
+      x += colWidth;
     });
     y += rowHeight;
 
-    // Lignes du tableau
+    // 🔹 Lignes
     inscrits.forEach((etudiant, index) => {
-      x = startX;
-      doc.font('Helvetica').fontSize(10);
-      colonnes.forEach((col, idx) => {
-        // Alternance de couleur de fond
-        doc.rect(x, y, colWidths[idx], rowHeight).fill(index % 2 === 0 ? '#ecf0f1' : '#ffffff');
+      x = 40;
+      const bg = index % 2 === 0 ? '#ecf0f1' : '#ffffff';
+      doc.font('Helvetica').fontSize(9);
+
+      colonnes.forEach(col => {
+        doc.rect(x, y, colWidth, rowHeight).fill(bg);
         doc.fillColor('#000');
 
         let valeur = '—';
-        if (col.label === "Date d'inscription") {
+        if (col.key === '__createdAt') {
           valeur = etudiant.createdAt ? new Date(etudiant.createdAt).toLocaleDateString() : '—';
-        } else if (col.label === 'Statut') {
-          valeur = etudiant.statut || 'En attente';
+        } else if (col.key === '__statut') {
+          valeur = etudiant.statut || "En attente";
         } else {
-          for (const k of col.keys) {
-            if (etudiant.donnees && etudiant.donnees[k]) {
-              valeur = etudiant.donnees[k];
-              break;
-            }
-          }
+          valeur = etudiant.donnees?.[col.key] || '—';
         }
 
-        // Centrage vertical (ajusté avec la taille de la police)
-        doc.text(valeur, x + 5, y + 9, { width: colWidths[idx] - 10, height: rowHeight, align: 'left' });
-        x += colWidths[idx];
+        doc.text(valeur, x + 5, y + 7, { width: colWidth - 10 });
+        x += colWidth;
       });
 
       y += rowHeight;
@@ -113,7 +123,7 @@ router.get('/pdf-liste', async (req, res) => {
       }
     });
 
-    // Pied du document
+    // 🔹 Footer
     doc.moveDown(2);
     doc.fontSize(10).fillColor('#888').text(`Total : ${inscrits.length} inscrit(s)`, { align: 'left' });
     doc.fontSize(10).fillColor('#888').text('Document généré automatiquement. Merci de vérifier les informations.', { align: 'center' });
@@ -128,8 +138,7 @@ router.get('/pdf-liste', async (req, res) => {
 
 
 
-// ✅ POST /inscription
-// ✅ POST /inscription
+// POST /inscription
 router.post('/', async (req, res) => {
   try {
     const donnees = req.body;
@@ -374,6 +383,19 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 });
+
+// ✅ Supprimer un inscrit
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Etudiant.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Inscription non trouvée" });
+    res.json({ message: "Inscription supprimée avec succès" });
+  } catch (err) {
+    console.error("Erreur suppression :", err);
+    res.status(500).json({ message: "Erreur serveur lors de la suppression" });
+  }
+});
+
 
 
 

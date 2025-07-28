@@ -155,82 +155,83 @@
         }
 
         .nav-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 30px 0 15px 10px;
-    color: rgba(255, 255, 255, 0.7);
-    position: relative;
-    z-index: 2;
-}
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 30px 0 15px 10px;
+            color: rgba(255, 255, 255, 0.7);
+            position: relative;
+            z-index: 2;
+        }
 
-.nav-item {
-    display: flex;
-    align-items: center;
-    padding: 15px 20px;
-    border-radius: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-    z-index: 2;
-    color: white; /* Couleur par défaut */
-}
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+            color: white;
+            /* Couleur par défaut */
+        }
 
-.nav-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateX(5px);
-}
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
 
-/* État actif : nav-item actif */
-.nav-item.active {
-    background: white;
-    color: var(--primary);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
+        /* État actif : nav-item actif */
+        .nav-item.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
 
-.nav-item.active .nav-text,
-.nav-item.active i {
-    color: var(--primary);
-}
+        .nav-item.active .nav-text,
+        .nav-item.active i {
+            color: var(--primary);
+        }
 
-/* Liseré animé à droite */
-.nav-item.active::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -5px;
-    height: 100%;
-    width: 5px;
-    background: var(--accent);
-    border-radius: 5px 0 0 5px;
-    animation: slideIn 0.4s forwards;
-}
+        /* Liseré animé à droite */
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -5px;
+            height: 100%;
+            width: 5px;
+            background: var(--accent);
+            border-radius: 5px 0 0 5px;
+            animation: slideIn 0.4s forwards;
+        }
 
-.nav-item i {
-    font-size: 20px;
-    width: 30px;
-    color: white;
-}
+        .nav-item i {
+            font-size: 20px;
+            width: 30px;
+            color: white;
+        }
 
-.nav-text {
-    font-size: 16px;
-    font-weight: 500;
-    color: white;
-}
+        .nav-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+        }
 
-/* Liens dans nav (si <a> utilisé dans .nav-text) */
-.nav-item .nav-link {
-    color: inherit;
-    font-weight: 600;
-    text-decoration: none;
-    transition: color 0.3s;
-}
+        /* Liens dans nav (si <a> utilisé dans .nav-text) */
+        .nav-item .nav-link {
+            color: inherit;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
 
-.nav-item .nav-link:hover {
-    color: var(--primary);
-}
+        .nav-item .nav-link:hover {
+            color: var(--primary);
+        }
 
 
         @keyframes slideIn {
@@ -617,6 +618,28 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            /* fluide sur mobile */
+        }
+
+        .table-responsive table {
+            min-width: 1000px;
+            /* ou une largeur que tu estimes minimale */
+        }
+
+        .table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--primary-light);
+  border-radius: 10px;
+}
+
+
+
         /* Floating Elements */
         .floating-element {
             position: absolute;
@@ -792,21 +815,24 @@
         }
 
         /* Modal content */
-        .modal-content {
-            position: relative;
-            margin: 5% auto;
-            width: 90%;
-            max-width: 500px;
-            padding: 30px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            color: #fff;
-            animation: slideIn 0.5s ease-out;
-            transition: all 0.3s ease;
-            font-family: 'Segoe UI', sans-serif;
-        }
+       .modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh; /* limite en hauteur */
+  margin: 5vh auto;
+  padding: 30px;
+  overflow-y: auto; /* active le scroll vertical si nécessaire */
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  color: #fff;
+  animation: slideIn 0.5s ease-out;
+  transition: all 0.3s ease;
+  font-family: 'Segoe UI', sans-serif;
+}
+
 
         /* Titre */
         .modal-content h3 {

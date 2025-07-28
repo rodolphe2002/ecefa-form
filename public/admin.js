@@ -435,93 +435,161 @@ async function chargerStatistiques() {
 // ---------------------------------------------------------------------
 
 
-// chager les inscriptions dans le tableau
 
+
+
+
+
+
+// chager les inscriptions dans le tableau
 async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateDebut = "", dateFin = "") {
+  const entete = document.getElementById("enteteTableauInscriptions");
   const tbody = document.getElementById("inscriptionsBody");
+
+  entete.innerHTML = "";
   tbody.innerHTML = "";
 
   try {
     const res = await fetchWithAuth(`${BASE_URL}/api/inscription`);
     const inscrits = await res.json();
 
-    const resultat = inscrits.filter(inscrit => {
-      const nom = extraireValeurDynamique(inscrit, 'nom');
-      const tel = extraireValeurDynamique(inscrit, 'téléphone');
-      const formation = extraireValeurDynamique(inscrit, 'formation');
-
-      const nomOk = nom.toLowerCase().includes(filtreTexte.toLowerCase()) ||
-        tel.toLowerCase().includes(filtreTexte.toLowerCase());
-
-      const formationOk = !filtreFormation || formation === filtreFormation;
-
-      const dateInscription = new Date(inscrit.createdAt);
-      const debutOk = !dateDebut || new Date(dateDebut) <= dateInscription;
-      const finOk = !dateFin || dateInscription <= new Date(dateFin);
-
-      return nomOk && formationOk && debutOk && finOk;
+    // 🔹 Génération dynamique des entêtes selon champsFormulaireActif
+    champsFormulaireActif.forEach(champ => {
+      const th = document.createElement("th");
+      th.textContent = champ.label || champ.key;
+      entete.appendChild(th);
     });
-resultat.forEach(inscrit => {
-  const nom = extraireValeurDynamique(inscrit, 'nom');
-  const tel = extraireValeurDynamique(inscrit, 'téléphone');
-  const formation = extraireValeurDynamique(inscrit, 'formation');
-  const statut = inscrit.statut || 'En attente';
-  const date = new Date(inscrit.createdAt).toLocaleDateString();
 
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${nom}</td>
-    <td>${formation}</td>
-    <td>${date}</td>
-    <td>${tel}</td>
-    <td><span class="status ${statut === 'Confirmée' ? 'confirmed' : 'pending'}">${statut}</span></td>
-    <td class="actions">
-      <button class="action-btn view" data-id="${inscrit._id}"><i class="fas fa-eye"></i></button>
-      <button class="action-btn edit" data-id="${inscrit._id}"><i class="fas fa-edit"></i></button>
-    </td>
-  `;
+    ["Statut", "Actions"].forEach(titre => {
+      const th = document.createElement("th");
+      th.textContent = titre;
+      entete.appendChild(th);
+    });
 
-  // ✅ Clic pour sélectionner (double clic)
-  tr.addEventListener('dblclick', () => {
-    idEtudiantSelectionne = inscrit._id;
-    activerBoutonPDF(inscrit._id);
-    document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
-    tr.classList.add('selected');
-  });
+  const resultat = inscrits.filter(inscrit => {
+  // 🔸 Vérifie si l’inscrit correspond au formulaire actif
+  const inscritKeys = Object.keys(inscrit.donnees || {});
+  const actifKeys = champsFormulaireActif.map(c => c.key);
 
-  // ✅ Clic sur l’œil = changer le statut
-  tr.querySelector(".view").addEventListener("click", async () => {
-    try {
-      const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${inscrit._id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ statut: "Confirmée" }),
-      });
+  const correspondAuFormulaireActif = actifKeys.every(key => inscritKeys.includes(key));
 
-      if (!res.ok) throw new Error("Erreur lors de la mise à jour du statut");
+  if (!correspondAuFormulaireActif) return false;
 
-      // Mettre à jour l’affichage local
-      tr.querySelector(".status").textContent = "Confirmée";
-      tr.querySelector(".status").classList.remove("pending");
-      tr.querySelector(".status").classList.add("confirmed");
-    } catch (err) {
-      console.error("❌ Erreur changement de statut :", err);
-      alert("Erreur lors de la confirmation du statut");
-    }
-  });
+  // 🔸 Filtres standards
+  const nom = extraireValeurDynamique(inscrit, 'nom') || "";
+  const tel = extraireValeurDynamique(inscrit, 'téléphone') || "";
+  const formation = extraireValeurDynamique(inscrit, 'formation') || "";
 
-  tbody.appendChild(tr);
+  const nomOk = nom.toLowerCase().includes(filtreTexte.toLowerCase()) ||
+                tel.toLowerCase().includes(filtreTexte.toLowerCase());
+
+  const formationOk = !filtreFormation || formation === filtreFormation;
+
+  const dateInscription = new Date(inscrit.createdAt);
+  const debutOk = !dateDebut || new Date(dateDebut) <= dateInscription;
+  const finOk = !dateFin || dateInscription <= new Date(dateFin);
+
+  return correspondAuFormulaireActif && nomOk && formationOk && debutOk && finOk;
 });
 
+
+    resultat.forEach(inscrit => {
+      const tr = document.createElement("tr");
+
+      champsFormulaireActif.forEach(champ => {
+        const td = document.createElement("td");
+        const valeur = inscrit.donnees?.[champ.key] || "—";
+        td.textContent = valeur;
+        tr.appendChild(td);
+      });
+
+      // 🔹 Colonne Statut
+      const statut = inscrit.statut || 'En attente';
+      const tdStatut = document.createElement("td");
+      tdStatut.innerHTML = `<span class="status ${statut === 'Confirmée' ? 'confirmed' : 'pending'}">${statut}</span>`;
+      tr.appendChild(tdStatut);
+
+      // 🔹 Colonne Actions
+      // 🔹 Colonne Actions
+const tdActions = document.createElement("td");
+tdActions.classList.add("actions");
+
+tdActions.innerHTML = `
+  <button class="action-btn view" data-id="${inscrit._id}" title="Confirmer"><i class="fas fa-eye"></i></button>
+  <button class="action-btn edit" data-id="${inscrit._id}" title="Modifier"><i class="fas fa-edit"></i></button>
+  <button class="action-btn delete" data-id="${inscrit._id}" title="Supprimer"><i class="fas fa-trash-alt"></i></button>
+`;
+
+tr.appendChild(tdActions);
+
+// 🔸 Action "Confirmer"
+tr.querySelector(".view").addEventListener("click", async () => {
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${inscrit._id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statut: "Confirmée" }),
+    });
+
+    if (!res.ok) throw new Error("Erreur lors de la mise à jour du statut");
+
+    tr.querySelector(".status").textContent = "Confirmée";
+    tr.querySelector(".status").classList.remove("pending");
+    tr.querySelector(".status").classList.add("confirmed");
   } catch (err) {
-    console.error("Erreur de chargement des inscriptions :", err);
+    console.error("❌ Erreur changement de statut :", err);
+    alert("Erreur lors de la confirmation du statut");
+  }
+});
+
+// 🔸 Action "Supprimer"
+tr.querySelector(".delete").addEventListener("click", async () => {
+  if (!confirm("Souhaitez-vous vraiment supprimer cet inscrit ? Cette action est irréversible.")) return;
+
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${inscrit._id}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) throw new Error("Erreur lors de la suppression");
+
+    // Retirer la ligne du tableau
+    tr.remove();
+  } catch (err) {
+    console.error("❌ Erreur suppression :", err);
+    alert("Erreur lors de la suppression de l'inscription.");
+  }
+});
+
+
+      tbody.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error("Erreur chargement inscriptions :", err);
   }
 }
 
 
 
+
+
+
+
+
+async function confirmerInscription(id) {
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/etudiants/confirmer/${id}`, {
+      method: "PATCH"
+    });
+    const updated = await res.json();
+    alert("Inscription confirmée !");
+    await chargerInscriptions();
+  } catch (err) {
+    console.error("Erreur confirmation :", err);
+    alert("Erreur confirmation");
+  }
+}
 
 
 
@@ -971,14 +1039,6 @@ async function supprimerFormulaire(id) {
 
 
 
-
-
-
-
-
-
-
-
 // ------------------ Session Gestion des mots de passe ------------------
 // ---------------------------------------------------------------------
 
@@ -1073,10 +1133,10 @@ document.getElementById("btnPDFFiltre").addEventListener("click", () => {
 
 
 // ------------------ Exporter PDF ------------------
-function exporterPDF(inscrit) {
+async function exporterPDF(inscrit) {
   const doc = new jsPDF();
-  const date = new Date(inscrit.createdAt).toLocaleDateString();
-  const donnees = inscrit.donnees || [];
+  const dateInscription = new Date(inscrit.createdAt).toLocaleDateString();
+  const donnees = inscrit.donnees || {};
   let y = 10;
 
   doc.setFontSize(16);
@@ -1084,28 +1144,37 @@ function exporterPDF(inscrit) {
   y += 10;
 
   doc.setFontSize(12);
-  const lignes = [
-    ["Nom et Prénom", getValeurParLabel(donnees, "nom")],
-    ["Date de naissance", getValeurParLabel(donnees, "naissance")],
-    ["Formation", getValeurParLabel(donnees, "formation")],
-    ["Date de formation", getValeurParLabel(donnees, "date formation")],
-    ["Activité", getValeurParLabel(donnees, "activite")],
-    ["Téléphone", getValeurParLabel(donnees, "téléphone")],
-    ["WhatsApp", getValeurParLabel(donnees, "whatsapp")],
-    ["Statut", inscrit.statut || "En attente"],
-    ["Date d'inscription", date]
-  ];
 
-  lignes.forEach(([label, valeur]) => {
+  // 🔹 Charger les champs dynamiques du formulaire actif
+  let champsFormulaire = [];
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/formulaires/actif`);
+    const json = await res.json();
+    champsFormulaire = json.champs || [];
+  } catch (err) {
+    console.error("Erreur récupération formulaire actif :", err);
+  }
+
+  // 🔹 Afficher les champs du formulaire actif dynamiquement
+  champsFormulaire.forEach(champ => {
+    const label = champ.label || champ.key;
+    const valeur = donnees[champ.key] || '—';
     doc.text(`${label} : ${valeur}`, 10, y);
     y += 8;
   });
 
+  // 🔹 Ajouter statut + date d’inscription (fixes)
   y += 5;
+  doc.text(`Statut : ${inscrit.statut || "En attente"}`, 10, y);
+  y += 8;
+  doc.text(`Date d'inscription : ${dateInscription}`, 10, y);
+
+  // 🔹 Footer
+  y += 10;
   doc.setFontSize(10);
   doc.text("Document généré automatiquement. Merci de vérifier les informations.", 10, y);
 
-  const nom = getValeurParLabel(donnees, "nom") || "etudiant";
+  const nom = donnees["nom"] || "etudiant";
   doc.save(`fiche_inscription_${nom}.pdf`);
 }
 
