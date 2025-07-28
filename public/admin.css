@@ -508,7 +508,7 @@
             box-shadow: var(--card-shadow);
             transition: var(--transition);
             backdrop-filter: blur(10px);
-            overflow: hidden;
+             overflow: visible;
         }
 
         .data-table-container:hover {
@@ -626,8 +626,8 @@
         }
 
         .table-responsive table {
-            min-width: 1000px;
-            /* ou une largeur que tu estimes minimale */
+             min-width: max-content; 
+         
         }
 
         .table-responsive::-webkit-scrollbar {
@@ -926,23 +926,6 @@
                 opacity: 1;
             }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
