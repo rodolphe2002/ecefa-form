@@ -451,7 +451,7 @@ async function chargerInscriptions(filtreTexte = "", filtreFormation = "", dateD
     const inscrits = await res.json();
 
     // 🔹 Limiter à 5 colonnes max
-    const champsAffiches = champsFormulaireActif.slice(0, 5);
+    const champsAffiches = champsFormulaireActif.slice(0, 4);
 
     // 🔹 Génération dynamique des entêtes selon les champs (max 5)
     champsAffiches.forEach(champ => {
