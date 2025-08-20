@@ -31,21 +31,9 @@ mongoose.connect(MONGO_URI)
     }
 
     // Routes API
-    const inscriptionRoute = require('./routes/inscriptionRoute');
-    app.use('/api/inscription', inscriptionRoute);
-
-
-
-    // const { router: adminRoute } = require('./routes/adminRoute');
-    // app.use('/api/admin', adminRoute);
-    
-    const adminRoute = require('./routes/adminRoute');
-    app.use('/api/admin', adminRoute);
-
-
+    app.use('/api/inscription', require('./routes/inscriptionRoute'));
+    app.use('/api/admin', require('./routes/adminRoute'));
     app.use('/api/formulaires', require('./routes/formulairesRoute'));
-
-
 
     // ⚡ Chemin absolu vers le dossier "public"
     app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -55,9 +43,10 @@ mongoose.connect(MONGO_URI)
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Lancement du serveur APRES connexion et création admin
-    app.listen(3000, () => {
-      console.log('🚀 Serveur lancé sur http://localhost:3000');
+    // Lancement du serveur : utiliser le port fourni par l'hébergeur ou 3000 en local
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
     });
 
   })
