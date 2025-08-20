@@ -806,45 +806,44 @@ function changerRequired(index, value) {
 }
 
 
-
 // ------------------ Enregistrement du formulaire ------------------
-saveFormBtn.addEventListener("click", async () => {
-  const nom = document.getElementById("formName").value.trim();
-  if (!nom) return alert("Le nom du formulaire est requis !");
-  if (champsFormulaire.length === 0) return alert("Ajoutez au moins un champ");
+// saveFormBtn.addEventListener("click", async () => {
+//   const nom = document.getElementById("formName").value.trim();
+//   if (!nom) return alert("Le nom du formulaire est requis !");
+//   if (champsFormulaire.length === 0) return alert("Ajoutez au moins un champ");
 
-  const actif = document.getElementById("formActif").checked;
+//   const actif = document.getElementById("formActif").checked;
 
-  // 🔁 Générer des clés techniques avant d’envoyer au backend
-  const champsAvecKeys = champsFormulaire.map(champ => ({
-    ...champ,
-    key: champ.label
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Supprimer accents
-      .replace(/\s+/g, "_")                             // Remplacer espaces par _
-      .replace(/[^\w_]/g, "")                           // Supprimer caractères spéciaux
-  }));
+//   // Générer des clés techniques avant d’envoyer au backend
+//   const champsAvecKeys = champsFormulaire.map(champ => ({
+//     ...champ,
+//     key: champ.label
+//       .toLowerCase()
+//       .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Supprimer accents
+//       .replace(/\s+/g, "_")                             // Remplacer espaces par _
+//       .replace(/[^\w_]/g, "")                           // Supprimer caractères spéciaux
+//   }));
 
-  try {
-    const res = await fetchWithAuth(BASE_FORM_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, champs: champsAvecKeys, actif })  // 👈 Ici, on envoie bien champsAvecKeys
-    });
+//   try {
+//     const res = await fetchWithAuth(BASE_FORM_API, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ nom, champs: champsAvecKeys, actif })  
+//     });
 
-    if (!res.ok) throw new Error("Erreur API");
+//     if (!res.ok) throw new Error("Erreur API");
 
-    const data = await res.json();
-    alert("Formulaire enregistré avec succès !");
-    document.getElementById("formName").value = "";
-    document.getElementById("formActif").checked = false;
-    champsFormulaire = [];
-    afficherChamps();
-  } catch (err) {
-    alert("Erreur lors de l’enregistrement");
-    console.error(err);
-  }
-});
+//     const data = await res.json();
+//     alert("Formulaire enregistré avec succès !");
+//     document.getElementById("formName").value = "";
+//     document.getElementById("formActif").checked = false;
+//     champsFormulaire = [];
+//     afficherChamps();
+//   } catch (err) {
+//     alert("Erreur lors de l’enregistrement");
+//     console.error(err);
+//   }
+// });
 
 // ------------------ Gestion des formulaires (affichage) ------------------
 
@@ -982,11 +981,15 @@ saveFormBtn.addEventListener("click", async () => {
     afficherChamps();
 
     // Recharge la liste des formulaires
-    chargerListeFormulaires();
+    await chargerListeFormulaires();
 
   } catch (err) {
     alert("Erreur lors de l’enregistrement");
     console.error(err);
+  } finally {
+    // Réactiver le bouton
+    saveFormBtn.disabled = false;
+    saveFormBtn.textContent = "Enregistrer";
   }
 });
 
