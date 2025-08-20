@@ -516,13 +516,16 @@
         }
 
         .table-responsive {
+            width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
+            table-layout: fixed; /* Prevent columns from expanding and breaking layout */
         }
 
         thead {
@@ -535,6 +538,9 @@
             text-align: left;
             font-weight: 500;
             position: relative;
+            white-space: nowrap;          /* Keep header in one line */
+            overflow: hidden;             /* Hide overflow */
+            text-overflow: ellipsis;      /* Ellipsis for long headers */
         }
 
         th:not(:last-child)::after {
@@ -562,6 +568,9 @@
             padding: 18px 20px;
             color: var(--dark);
             font-size: 15px;
+            white-space: nowrap;          /* Prevent layout stretch on long content */
+            overflow: hidden;             /* Hide overflow */
+            text-overflow: ellipsis;      /* Ellipsis for long content */
         }
 
         .status {
