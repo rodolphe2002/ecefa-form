@@ -214,10 +214,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const tel = donnees.telephone;
             const localKey = generateLocalKey(nom, tel);
 
-            if (localStorage.getItem(localKey) === '1') {
-                alert("⚠️ Vous êtes déjà inscrit depuis ce navigateur.");
-                return;
-            }
 
             try {
                 const res = await fetch(`${BASE_URL}/api/inscription`, {

@@ -702,19 +702,25 @@
             }
 
             .main-content {
-                padding: 20px;
+                padding: 6px;
+            }
+
+            .data-table-container {
+                padding: 8px;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 600px;
             }
         }
-
-
 
         tr.selected {
             background-color: #e3f2fd;
         }
-
-
-
-
 
         .dropdown-menu {
             position: absolute;
@@ -743,72 +749,44 @@
         }
 
 
-
-
-
-
-
-        /* modal */
-
-
         .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.4s ease-out forwards;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+}
 
         .modal-content {
-            background: #fff;
-            margin: 10% auto;
-            padding: 20px;
-            width: 300px;
-            border-radius: 8px;
-        }
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    padding: 30px 30px 40px 30px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    color: #fff;
+    animation: slideIn 0.5s ease-out;
+    transition: all 0.3s ease;
+    font-family: 'Segoe UI', sans-serif;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
 
-        .close {
-            float: right;
-            cursor: pointer;
-        }
-
-
-
-
-
-        /* Modal container */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            left: 0;
-            top: 0;
-            width: 100vw;
-            height: 100vh;
-            backdrop-filter: blur(6px);
-            background: rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-
-        /* Modal content */
-        .modal-content {
-            position: relative;
-            margin: 5% auto;
-            width: 90%;
-            max-width: 500px;
-            padding: 30px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            color: #fff;
-            animation: slideIn 0.5s ease-out;
-            transition: all 0.3s ease;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        /* Titre */
         .modal-content h3 {
             font-size: 1.5rem;
             margin-bottom: 20px;
@@ -816,7 +794,6 @@
             color: #fff;
         }
 
-        /* Champ de formulaire */
         .modal-content label {
             display: block;
             margin-bottom: 15px;
@@ -840,7 +817,6 @@
             color: #333;
         }
 
-        /* Bouton enregistrer */
         .modal-content button[type="submit"] {
             width: 100%;
             padding: 12px;
@@ -859,7 +835,6 @@
             background: linear-gradient(135deg, #5f0fbd, #1f6df5);
         }
 
-        /* Bouton fermer */
         .close {
             position: absolute;
             top: 15px;
@@ -878,8 +853,14 @@
             background: rgba(255, 255, 255, 0.25);
         }
 
-        /* Animations */
-        @keyframes fadeIn {
+        @media (max-width: 600px) {
+    .modal-content {
+        max-width: 98vw;
+        padding: 18px 4vw 30px 4vw;
+    }
+}
+
+@keyframes fadeIn {
             from {
                 opacity: 0;
             }
@@ -900,26 +881,6 @@
                 opacity: 1;
             }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         .filtre-container {
             display: flex;
@@ -986,10 +947,6 @@
             pointer-events: none;
         }
 
-
-
-
-
         .form-builder {
             padding: 20px;
             background: #f9f9f9;
@@ -1023,13 +980,6 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
-
-
-
-        /* style pour paramettre */
-
-
 
         #parametres {
             max-width: 400px;
@@ -1112,8 +1062,7 @@
             user-select: none;
         }
 
-
-
+        /* .main-section is now visible by default; JS will handle section switching */
         .main-section {
-            display: none;
+            display: block;
         }

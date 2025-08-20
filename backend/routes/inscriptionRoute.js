@@ -143,7 +143,13 @@ router.post('/', async (req, res) => {
   try {
     const donnees = req.body;
 
-    // Récupération sécurisée des champs
+    // Récupérer le formulaire actif pour lier l'inscription
+    const formulaireActif = await Formulaire.findOne({ actif: true });
+    if (!formulaireActif) {
+      return res.status(400).json({ message: "Aucun formulaire actif." });
+    }
+    const idFormulaire = formulaireActif._id;
+
     const nom_prenom = donnees?.nom_prenom?.trim() || null;
     const telephone = donnees?.telephone?.trim() || null;
     const date_naissance = donnees?.date_naissance || null;
@@ -193,13 +199,16 @@ router.post('/', async (req, res) => {
     }
 
     if (conditions.length > 0) {
-      const existing = await Etudiant.findOne({ $or: conditions });
+      const existing = await Etudiant.findOne({
+        idFormulaire: idFormulaire,
+        $or: conditions
+      });
       if (existing) {
-        return res.status(400).json({ message: "⚠️ Cette personne semble déjà inscrite." });
+        return res.status(400).json({ message: "⚠️ Cette personne semble déjà inscrite à ce formulaire." });
       }
     }
 
-    const etudiant = new Etudiant({ donnees });
+    const etudiant = new Etudiant({ donnees, idFormulaire });
     await etudiant.save();
 
     res.status(201).json({ message: "✅ Inscription réussie !" });
@@ -253,7 +262,6 @@ router.patch('/confirmer/:id', async (req, res) => {
   }
 });
 
-// ✅ Modifier un inscrit
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Etudiant.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -263,19 +271,42 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// ✅ Statistiques globales
 router.get('/stats', async (req, res) => {
   try {
-    const total = await Etudiant.countDocuments();
-    const confirmees = await Etudiant.countDocuments({ statut: 'Confirmée' });
-    const enAttente = await Etudiant.countDocuments({ statut: 'En attente' });
+    // Récupérer le formulaire actif
+    const formulaire = await Formulaire.findOne({ actif: true });
+    if (!formulaire) {
+      return res.status(404).json({ message: "Aucun formulaire actif." });
+    }
+
+    // Récupérer uniquement les inscrits liés au formulaire actif, du plus récent au plus ancien
+    const inscritsFormulaire = await Etudiant.find({ idFormulaire: formulaire._id }).sort({ createdAt: -1 });
+
+    // Dédupliquer les inscrits par "identité" (nom_prenom + date_naissance + telephone)
+    const mapIdentite = new Map();
+    for (const inscrit of inscritsFormulaire) {
+      const donnees = inscrit.donnees || {};
+      const identite = [
+        (donnees.nom_prenom || '').trim().toLowerCase(),
+        (donnees.date_naissance || '').trim(),
+        (donnees.telephone || '').trim()
+      ].join('|');
+      // On garde le plus récent (déjà trié)
+      if (!mapIdentite.has(identite)) {
+        mapIdentite.set(identite, inscrit);
+      }
+    }
+    const inscritsNets = Array.from(mapIdentite.values());
+
+    const total = inscritsNets.length;
+    const confirmees = inscritsNets.filter(i => i.statut === 'Confirmée').length;
+    const enAttente = inscritsNets.filter(i => i.statut === 'En attente').length;
 
     const now = new Date();
     const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const totalCeMois = await Etudiant.countDocuments({ createdAt: { $gte: debutMois } });
-    const confirmeesCeMois = await Etudiant.countDocuments({ statut: 'Confirmée', createdAt: { $gte: debutMois } });
-    const enAttenteCeMois = await Etudiant.countDocuments({ statut: 'En attente', createdAt: { $gte: debutMois } });
+    const totalCeMois = inscritsNets.filter(i => i.createdAt >= debutMois).length;
+    const confirmeesCeMois = inscritsNets.filter(i => i.statut === 'Confirmée' && i.createdAt >= debutMois).length;
+    const enAttenteCeMois = inscritsNets.filter(i => i.statut === 'En attente' && i.createdAt >= debutMois).length;
 
     const tauxConfirmation = total > 0 ? Math.round((confirmees / total) * 100) : 0;
     const tauxConfirmationCeMois = totalCeMois > 0 ? Math.round((confirmeesCeMois / totalCeMois) * 100) : 0;
@@ -296,11 +327,11 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// ✅ Statistiques par formation
 router.get('/stats/formations', async (req, res) => {
   try {
     const stats = await Etudiant.aggregate([
-      { $group: { _id: "$formation", count: { $sum: 1 } } },
+      { $match: { "donnees.formation": { $exists: true, $ne: null } } },
+      { $group: { _id: "$donnees.formation", count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
     res.json(stats);
@@ -395,10 +426,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur lors de la suppression" });
   }
 });
-
-
-
-
-
 
 module.exports = router;

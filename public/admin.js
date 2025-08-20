@@ -397,7 +397,10 @@ async function majFormationsChart(chart) {
   }
 }
 
-// ------------------ Statistiques ------------------
+// ------------------ Statistiques (Formulaire Actif uniquement) ------------------
+// Les statistiques affichées (Inscriptions totales, Confirmées, En attente, Taux de confirmation)
+// sont calculées uniquement pour le formulaire actif via l'API /api/inscription/stats.
+// Si plusieurs formulaires existent, seules les données du formulaire actuellement actif sont prises en compte.
 async function chargerStatistiques() {
   try {
     const res = await fetchWithAuth(`${BASE_URL}/api/inscription/stats`);
@@ -590,6 +593,7 @@ async function confirmerInscription(id) {
 
 // ------------------ MODAL EDITION ------------------
 const modal = document.getElementById('editModal');
+modal.style.display = 'none'; // Toujours cachée au départ
 modal.addEventListener('click', (e) => {
   if (e.target.closest('#closeEditModal')) {
     modal.style.display = 'none';
@@ -600,44 +604,58 @@ const closeModal = document.getElementById('closeEditModal');
 const editForm = document.getElementById('editForm');
 let currentEditId = null;
 
+// Fonction pour remplir la modale avec les données de l'étudiant
+function remplirModalEdition(etudiant) {
+  editForm.innerHTML = ''; // Vider le formulaire
+  
+  // Ajouter chaque champ dynamique
+  if (etudiant.donnees) {
+    for (const [key, value] of Object.entries(etudiant.donnees)) {
+      if (key.startsWith('champ_')) {
+        const champIndex = key.replace('champ_', '');
+        const champConfig = champsFormulaireActif[champIndex];
+        if (champConfig) {
+          editForm.innerHTML += `
+            <div class="form-group">
+              <label>${champConfig.label || 'Champ ' + champIndex}:</label>
+              <input type="text" name="${key}" value="${value || ''}" />
+            </div>
+          `;
+        }
+      } else {
+        editForm.innerHTML += `
+          <div class="form-group">
+            <label>${key}:</label>
+            <input type="text" name="${key}" value="${value || ''}" />
+          </div>
+        `;
+      }
+    }
+  }
+
+  // Ajouter le bouton de soumission
+  editForm.innerHTML += `
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Enregistrer
+      </button>
+    </div>
+  `;
+}
+
 // Fermer la modale
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 
-// Ouvrir la modale d'édition dynamiquement
+// Ouvrir la modale d'édition uniquement sur clic bouton 'edit'
 document.addEventListener('click', async (e) => {
   if (e.target.closest('.action-btn.edit')) {
     const btn = e.target.closest('.action-btn.edit');
-    currentEditId = btn.dataset.id;
-
+    const id = btn.dataset.id;
+    currentEditId = id;
     try {
-      const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${currentEditId}`);
-      if (!res.ok) throw new Error("Étudiant introuvable");
+      const res = await fetchWithAuth(`${BASE_URL}/api/inscription/${id}`);
       const data = await res.json();
-      const donnees = data.donnees || {};
-
-      // Vider le formulaire avant d’ajouter dynamiquement les champs
-      editForm.innerHTML = `
-        <span id="closeEditModal" class="close" title="Fermer">
-            <i class="fas fa-times"></i>
-        </span>
-        <h3><i class="fas fa-user-edit"></i> Modifier l'étudiant</h3>
-      `;
-
-      for (const [champ, valeur] of Object.entries(donnees)) {
-        editForm.innerHTML += `
-          <label>
-            ${champ} :
-            <input name="${champ}" value="${valeur || ''}" />
-          </label>
-        `;
-      }
-
-      editForm.innerHTML += `
-        <button type="submit">
-          <i class="fas fa-save"></i> Enregistrer
-        </button>
-      `;
-
+      remplirModalEdition(data);
       modal.style.display = 'block';
 
     } catch (err) {
@@ -676,32 +694,8 @@ editForm.addEventListener('submit', async (e) => {
 
 // ------------------ Enregistrement des modifications du formulaire ------------------
 
+// (Suppression du doublon ici)
 
-document.getElementById('editForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
-
-  const inputs = Array.from(this.querySelectorAll('input[name]'));
-  const nouvellesDonnees = {};
-
-  inputs.forEach(input => {
-    nouvellesDonnees[input.name] = input.value;
-  });
-
-  try {
-    await fetchWithAuth(`${BASE_URL}/api/inscription/${idEtudiantSelectionne}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ donnees: nouvellesDonnees })
-    });
-
-    alert('Modification enregistrée');
-    document.getElementById('editModal').style.display = 'none';
-    chargerInscriptions(); // Recharger la liste
-  } catch (err) {
-    console.error(err);
-    alert("Erreur lors de l'enregistrement");
-  }
-});
 
 
 

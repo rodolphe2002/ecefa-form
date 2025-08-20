@@ -8,6 +8,11 @@ const etudiantSchema = new mongoose.Schema({
   statut: {
     type: String,
     default: 'En attente'
+  },
+  idFormulaire: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Formulaire',
+    required: true
   }
 }, { timestamps: true });
 

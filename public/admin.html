@@ -43,44 +43,14 @@
                 <i class="fas fa-chart-line"></i>
                 <div class="nav-text"><a href="#charts-container" class="nav-link">Statistiques</a></div>
             </div>
-
-
-            <!-- <div class="nav-item">
-                <i class="fas fa-edit"></i>
-                <div class="nav-text"><a href="#gestion-formulaires" class="nav-link">créer Formulaires</a></div>
-            </div> -->
             <div class="nav-item">
                 <i class="fas fa-edit"></i>
                 <div class="nav-text"><a href="#formListContainer" class="nav-link">Gestion des Formulaires</a></div>
             </div>
-
-
-
-
             <div class="nav-item">
                 <i class="fas fa-cog"></i>
                 <div class="nav-text"><a href="#parametres" class="nav-link">Paramètres</a></div>
             </div>
-
-
-
-            <!-- <div class="nav-title">Formations</div>
-            <div class="nav-item">
-                <i class="fas fa-laptop-code"></i>
-                <div class="nav-text">Informatique</div>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-chart-bar"></i>
-                <div class="nav-text">Gestion</div>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-bullhorn"></i>
-                <div class="nav-text">Marketing</div>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-paint-brush"></i>
-                <div class="nav-text">Design</div>
-            </div> -->
         </div>
 
         <!-- Main Content -->
@@ -260,8 +230,8 @@
                                 <td>+33 6 12 34 56 78</td>
                                 <td><span class="status confirmed">Confirmée</span></td>
                                 <td class="actions">
-                                    <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                                    <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn view" aria-label="Voir" title="Voir"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn edit" aria-label="Éditer" title="Éditer"><i class="fas fa-edit"></i></button>
                                 </td>
                             </tr>
                             <tr>
@@ -271,8 +241,8 @@
                                 <td>+33 6 87 65 43 21</td>
                                 <td><span class="status pending">En attente</span></td>
                                 <td class="actions">
-                                    <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                                    <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn view" aria-label="Voir" title="Voir"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn edit" aria-label="Éditer" title="Éditer"><i class="fas fa-edit"></i></button>
                                 </td>
                             </tr>
                             <tr>
@@ -282,8 +252,8 @@
                                 <td>+33 6 98 76 54 32</td>
                                 <td><span class="status confirmed">Confirmée</span></td>
                                 <td class="actions">
-                                    <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                                    <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn view" aria-label="Voir" title="Voir"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn edit" aria-label="Éditer" title="Éditer"><i class="fas fa-edit"></i></button>
                                 </td>
                             </tr>
                             <tr>
@@ -293,8 +263,8 @@
                                 <td>+33 6 23 45 67 89</td>
                                 <td><span class="status confirmed">Confirmée</span></td>
                                 <td class="actions">
-                                    <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                                    <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn view" aria-label="Voir" title="Voir"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn edit" aria-label="Éditer" title="Éditer"><i class="fas fa-edit"></i></button>
                                 </td>
                             </tr>
                             <tr>
@@ -304,22 +274,18 @@
                                 <td>+33 6 54 32 10 98</td>
                                 <td><span class="status pending">En attente</span></td>
                                 <td class="actions">
-                                    <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                                    <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn view" aria-label="Voir" title="Voir"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn edit" aria-label="Éditer" title="Éditer"><i class="fas fa-edit"></i></button>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+
             <!-- Gestion des Formulaires -->
-            <!-- <div id="gestion-formulaires" class="data-table-container main-section" style="margin-top: 40px;">
-           
-            </div> -->
-
-
             <div id="formListContainer" class="data-table-container main-section" style="margin-top: 40px;">
-                     <div class="card-header">
+                <div class="card-header">
                     <div class="card-title">Création de formulaire dynamique</div>
                 </div>
 
@@ -391,8 +357,7 @@
             <span id="closeEditModal" class="close" title="Fermer">
                 <i class="fas fa-times"></i>
             </span>
-            <!-- <h3><i class="fas fa-user-edit"></i> Modifier l'étudiant</h3> -->
-            <form id="editForm">
+                        <form id="editForm">
                 <label>
                     <i class="fas fa-user"></i> Nom & Prénom :
                     <input name="nom_prenom" required />
