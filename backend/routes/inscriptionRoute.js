@@ -6,6 +6,15 @@ const Formulaire = require('../models/Formulaire');
 
 
 
+// Middleware anti-cache
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
+
 
 
 
@@ -279,8 +288,18 @@ router.get('/stats', async (req, res) => {
       return res.status(404).json({ message: "Aucun formulaire actif." });
     }
 
-    // Récupérer uniquement les inscrits liés au formulaire actif, du plus récent au plus ancien
-    const inscritsFormulaire = await Etudiant.find({ idFormulaire: formulaire._id }).sort({ createdAt: -1 });
+    // Récupérer les inscrits du plus récent au plus ancien
+    const inscritsBruts = await Etudiant.find().sort({ createdAt: -1 });
+
+    // Filtrer par compatibilité avec le formulaire actif (fallback si idFormulaire absent sur anciens enregistrements)
+    const keysFormulaireActif = (formulaire.champs || []).map(c => c.key);
+    const inscritsFormulaire = inscritsBruts.filter(inscrit => {
+      // Si idFormulaire correspond, on garde directement
+      if (inscrit.idFormulaire && String(inscrit.idFormulaire) === String(formulaire._id)) return true;
+      // Sinon, on vérifie la compatibilité des champs
+      const keysInscrit = Object.keys(inscrit.donnees || {});
+      return keysFormulaireActif.length > 0 && keysFormulaireActif.every(key => keysInscrit.includes(key));
+    });
 
     // Dédupliquer les inscrits par "identité" (nom_prenom + date_naissance + telephone)
     const mapIdentite = new Map();
@@ -329,11 +348,33 @@ router.get('/stats', async (req, res) => {
 
 router.get('/stats/formations', async (req, res) => {
   try {
-    const stats = await Etudiant.aggregate([
-      { $match: { "donnees.formation": { $exists: true, $ne: null } } },
-      { $group: { _id: "$donnees.formation", count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
+    // Récupérer le formulaire actif pour filtrer
+    const formulaire = await Formulaire.findOne({ actif: true });
+    if (!formulaire) {
+      return res.status(404).json({ message: "Aucun formulaire actif." });
+    }
+
+    const keysFormulaireActif = (formulaire.champs || []).map(c => c.key);
+
+    // Récupérer tous les inscrits et filtrer comme pour /stats
+    const inscritsBruts = await Etudiant.find({ "donnees.formation": { $exists: true, $ne: null } }).sort({ createdAt: -1 });
+    const inscritsFormulaire = inscritsBruts.filter(inscrit => {
+      if (inscrit.idFormulaire && String(inscrit.idFormulaire) === String(formulaire._id)) return true;
+      const keysInscrit = Object.keys(inscrit.donnees || {});
+      return keysFormulaireActif.length > 0 && keysFormulaireActif.every(key => keysInscrit.includes(key));
+    });
+
+    // Agréger côté application
+    const counts = inscritsFormulaire.reduce((acc, i) => {
+      const f = i.donnees?.formation || '—';
+      acc[f] = (acc[f] || 0) + 1;
+      return acc;
+    }, {});
+
+    const stats = Object.entries(counts)
+      .map(([formation, count]) => ({ _id: formation, count }))
+      .sort((a, b) => b.count - a.count);
+
     res.json(stats);
   } catch (err) {
     res.status(500).json({ message: "Erreur stats formations", error: err.message });
