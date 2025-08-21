@@ -46,6 +46,22 @@ async function main() {
     console.warn('⚠️ Index formulaire_actif:', e.message);
   }
 
+  // Enforce only one active form at a time using a partial unique index
+  try {
+    const res4 = await Formulaire.collection.createIndex(
+      { actif: 1 },
+      {
+        name: 'uniq_form_actif_true',
+        unique: true,
+        partialFilterExpression: { actif: true },
+        background: true
+      }
+    );
+    console.log('✅ Index créé:', res4);
+  } catch (e) {
+    console.warn('⚠️ Index uniq_form_actif_true:', e.message);
+  }
+
   await mongoose.disconnect();
   console.log('👋 Déconnecté.');
 }

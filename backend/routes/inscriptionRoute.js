@@ -329,11 +329,12 @@ router.get('/stats', async (req, res) => {
     const confirmees = inscritsFormulaire.filter(i => i.statut === 'Confirmée').length;
     const enAttente = inscritsFormulaire.filter(i => i.statut === 'En attente').length;
 
+    // Utiliser une frontière de mois en UTC pour cohérence inter-serveurs
     const now = new Date();
-    const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
-    const totalCeMois = inscritsFormulaire.filter(i => i.createdAt >= debutMois).length;
-    const confirmeesCeMois = inscritsFormulaire.filter(i => i.statut === 'Confirmée' && i.createdAt >= debutMois).length;
-    const enAttenteCeMois = inscritsFormulaire.filter(i => i.statut === 'En attente' && i.createdAt >= debutMois).length;
+    const debutMoisUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+    const totalCeMois = inscritsFormulaire.filter(i => i.createdAt >= debutMoisUTC).length;
+    const confirmeesCeMois = inscritsFormulaire.filter(i => i.statut === 'Confirmée' && i.createdAt >= debutMoisUTC).length;
+    const enAttenteCeMois = inscritsFormulaire.filter(i => i.statut === 'En attente' && i.createdAt >= debutMoisUTC).length;
 
     const tauxConfirmation = total > 0 ? Math.round((confirmees / total) * 100) : 0;
     const tauxConfirmationCeMois = totalCeMois > 0 ? Math.round((confirmeesCeMois / totalCeMois) * 100) : 0;
