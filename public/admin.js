@@ -416,12 +416,17 @@ async function chargerStatistiques() {
     document.getElementById("stat-confirmees").textContent = confirmees;
     document.getElementById("stat-attente").textContent = enAttente;
 
-    document.getElementById("var-total").textContent = `${Math.round((totalCeMois / total) * 100 || 0)}% ce mois`;
-    document.getElementById("var-confirmees").textContent = `${Math.round((confirmeesCeMois / confirmees) * 100 || 0)}% ce mois`;
-    document.getElementById("var-attente").textContent = `${Math.round((enAttenteCeMois / enAttente) * 100 || 0)}% ce mois`;
+    // Afficher des comptes mensuels absolus plutôt que des pourcentages trompeurs
+    document.getElementById("var-total").textContent = `${totalCeMois} ce mois`;
+    document.getElementById("var-confirmees").textContent = `${confirmeesCeMois} ce mois`;
+    document.getElementById("var-attente").textContent = `${enAttenteCeMois} ce mois`;
 
     document.getElementById("taux-confirmation").textContent = `${tauxConfirmation}%`;
-    document.getElementById("var-confirmation").textContent = `${variationTaux >= 0 ? '+' : ''}${variationTaux}% ce mois`;
+    // Afficher le taux de confirmation du mois courant (fallback si non fourni par l'API)
+    const tauxMois = (typeof data.tauxConfirmationCeMois === 'number')
+      ? data.tauxConfirmationCeMois
+      : (totalCeMois > 0 ? Math.round((confirmeesCeMois / totalCeMois) * 100) : 0);
+    document.getElementById("var-confirmation").textContent = `${tauxMois}% ce mois`;
   } catch (err) {
     console.error("Erreur chargement stats", err);
   }

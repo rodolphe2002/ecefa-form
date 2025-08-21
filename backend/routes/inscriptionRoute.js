@@ -250,8 +250,31 @@ router.get('/verifier', async (req, res) => {
 // ✅ Voir tous les inscrits
 router.get('/', async (req, res) => {
   try {
-    const etudiants = await Etudiant.find().sort({ createdAt: -1 });
-    res.json(etudiants);
+    // Permet de récupérer toutes les inscriptions (debug/admin): /api/inscription?all=true
+    const returnAll = String(req.query.all || '').toLowerCase() === 'true';
+
+    if (returnAll) {
+      const etudiants = await Etudiant.find().sort({ createdAt: -1 });
+      return res.json(etudiants);
+    }
+
+    // Sinon, par défaut, on renvoie uniquement les inscrits du formulaire actif,
+    // avec la même logique de compatibilité que /stats pour cohérence.
+    const formulaire = await Formulaire.findOne({ actif: true });
+    if (!formulaire) {
+      return res.status(404).json({ message: "Aucun formulaire actif." });
+    }
+
+    const keysFormulaireActif = (formulaire.champs || []).map(c => c.key);
+
+    const inscritsBruts = await Etudiant.find().sort({ createdAt: -1 });
+    const inscritsFormulaire = inscritsBruts.filter(inscrit => {
+      if (inscrit.idFormulaire && String(inscrit.idFormulaire) === String(formulaire._id)) return true;
+      const keysInscrit = Object.keys(inscrit.donnees || {});
+      return keysFormulaireActif.length > 0 && keysFormulaireActif.every(key => keysInscrit.includes(key));
+    });
+
+    res.json(inscritsFormulaire);
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
@@ -301,31 +324,16 @@ router.get('/stats', async (req, res) => {
       return keysFormulaireActif.length > 0 && keysFormulaireActif.every(key => keysInscrit.includes(key));
     });
 
-    // Dédupliquer les inscrits par "identité" (nom_prenom + date_naissance + telephone)
-    const mapIdentite = new Map();
-    for (const inscrit of inscritsFormulaire) {
-      const donnees = inscrit.donnees || {};
-      const identite = [
-        (donnees.nom_prenom || '').trim().toLowerCase(),
-        (donnees.date_naissance || '').trim(),
-        (donnees.telephone || '').trim()
-      ].join('|');
-      // On garde le plus récent (déjà trié)
-      if (!mapIdentite.has(identite)) {
-        mapIdentite.set(identite, inscrit);
-      }
-    }
-    const inscritsNets = Array.from(mapIdentite.values());
-
-    const total = inscritsNets.length;
-    const confirmees = inscritsNets.filter(i => i.statut === 'Confirmée').length;
-    const enAttente = inscritsNets.filter(i => i.statut === 'En attente').length;
+    // Calcul direct sans déduplication pour refléter le tableau
+    const total = inscritsFormulaire.length;
+    const confirmees = inscritsFormulaire.filter(i => i.statut === 'Confirmée').length;
+    const enAttente = inscritsFormulaire.filter(i => i.statut === 'En attente').length;
 
     const now = new Date();
     const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
-    const totalCeMois = inscritsNets.filter(i => i.createdAt >= debutMois).length;
-    const confirmeesCeMois = inscritsNets.filter(i => i.statut === 'Confirmée' && i.createdAt >= debutMois).length;
-    const enAttenteCeMois = inscritsNets.filter(i => i.statut === 'En attente' && i.createdAt >= debutMois).length;
+    const totalCeMois = inscritsFormulaire.filter(i => i.createdAt >= debutMois).length;
+    const confirmeesCeMois = inscritsFormulaire.filter(i => i.statut === 'Confirmée' && i.createdAt >= debutMois).length;
+    const enAttenteCeMois = inscritsFormulaire.filter(i => i.statut === 'En attente' && i.createdAt >= debutMois).length;
 
     const tauxConfirmation = total > 0 ? Math.round((confirmees / total) * 100) : 0;
     const tauxConfirmationCeMois = totalCeMois > 0 ? Math.round((confirmeesCeMois / totalCeMois) * 100) : 0;
@@ -345,6 +353,8 @@ router.get('/stats', async (req, res) => {
     res.status(500).json({ message: "Erreur stats", error: err.message });
   }
 });
+
+
 
 router.get('/stats/formations', async (req, res) => {
   try {
