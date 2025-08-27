@@ -1,10 +1,10 @@
   // // const BASE_URL = "http://localhost:3000";
-  // const BASE_URL = "https://ecefa-form.onrender.com";
+  // const BASE_URL = "https://ecefa-form-0l7s.onrender.com";
 
   // Exemple automatique pour BASE_URL
 const BASE_URL = window.location.hostname === "localhost"
   ? "http://localhost:3000"
-  : "https://ecefa-form.onrender.com";
+  : "https://ecefa-form-0l7s.onrender.com";
 
 // Attendre que le DOM soit prêt avant d'ajouter les écouteurs
 document.addEventListener('DOMContentLoaded', () => {

@@ -6,7 +6,28 @@ const path = require('path');
 const Admin = require('./models/Admin'); // chemin vers modèle Admin
 
 const app = express();
-app.use(cors());
+
+// CORS avec liste blanche
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://ecefa-form-seven.vercel.app'
+];
+
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origin non autorisée par CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+// Le préflight OPTIONS est géré par le middleware CORS global au-dessus.
+
 app.use(express.json());
 
 const { MONGO_URI, ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
