@@ -4,7 +4,7 @@
   // Exemple automatique pour BASE_URL
 const BASE_URL = window.location.hostname === "localhost"
   ? "http://localhost:3000"
-  : "https://ecefa-form-0l7s.onrender.com";
+  : window.location.origin; // même origine en production (évite CORS inter-sous-domaines)
 
 // Attendre que le DOM soit prêt avant d'ajouter les écouteurs
 document.addEventListener('DOMContentLoaded', () => {
