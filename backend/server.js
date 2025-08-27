@@ -7,17 +7,30 @@ const Admin = require('./models/Admin'); // chemin vers modèle Admin
 
 const app = express();
 
-// CORS avec liste blanche
+// CORS avec liste blanche + patterns (Vercel previews et domaines Render)
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://ecefa-form-seven.vercel.app'
+  'https://ecefa-form-seven.vercel.app',
+  'https://ecefa-form-0l7s.onrender.com'
+];
+
+const allowedOriginPatterns = [
+  /\.vercel\.app$/i,          // toutes les previews Vercel
+  /\.onrender\.com$/i         // domaines Render
 ];
 
 const corsOptions = {
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    // origin peut être undefined (ex: requêtes serveur à serveur, healthchecks), on autorise
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      allowedOriginPatterns.some((rx) => rx.test(origin));
+
+    if (isAllowed) return callback(null, true);
+
+    console.warn('CORS: origine refusée ->', origin);
     return callback(new Error('Origin non autorisée par CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
