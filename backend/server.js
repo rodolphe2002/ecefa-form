@@ -6,7 +6,13 @@ const path = require('path');
 const Admin = require('./models/Admin'); // chemin vers modèle Admin
 
 const app = express();
-app.use(cors());
+const corsOptions = {
+  origin: ['https://ecefa-form-seven.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const { MONGO_URI, ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
