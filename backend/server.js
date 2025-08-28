@@ -43,46 +43,58 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 
+// Routes API montées immédiatement (Mongoose buffer les requêtes si besoin)
+app.use('/api/inscription', require('./routes/inscriptionRoute'));
+app.use('/api/admin', require('./routes/adminRoute'));
+app.use('/api/formulaires', require('./routes/formulairesRoute'));
+
+// Endpoint santé simple
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// 404 JSON pour les API non trouvées
+app.use('/api', (req, res) => {
+  res.status(404).json({ message: 'Endpoint API introuvable' });
+});
+
+// ⚡ Chemin absolu vers le dossier "public"
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Route principale : renvoie index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Lancement du serveur : utiliser le port fourni par l'hébergeur ou 3000 en local
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
+});
+
 const { MONGO_URI, ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
 
-// Connexion MongoDB
+// Connexion MongoDB (asynchrone; les routes sont déjà montées)
 mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('✅ Connecté à MongoDB');
 
-    // Vérifier si admin existe
-    const exists = await Admin.findOne({ username: ADMIN_USERNAME });
-    if (exists) {
-      console.log('⚠️ Admin existe déjà.');
-    } else {
-      // Créer admin
-      const admin = new Admin({
-        username: ADMIN_USERNAME,
-        password: ADMIN_PASSWORD, // sera hashé dans le modèle automatiquement
-      });
-      await admin.save();
-      console.log('✅ Admin créé avec succès');
+    // Vérifier si admin existe et créer si nécessaire
+    try {
+      const exists = await Admin.findOne({ username: ADMIN_USERNAME });
+      if (exists) {
+        console.log('⚠️ Admin existe déjà.');
+      } else {
+        const admin = new Admin({
+          username: ADMIN_USERNAME,
+          password: ADMIN_PASSWORD,
+        });
+        await admin.save();
+        console.log('✅ Admin créé avec succès');
+      }
+    } catch (err) {
+      console.error('❌ Erreur lors de la vérification/création admin:', err);
     }
-
-    // Routes API
-    app.use('/api/inscription', require('./routes/inscriptionRoute'));
-    app.use('/api/admin', require('./routes/adminRoute'));
-    app.use('/api/formulaires', require('./routes/formulairesRoute'));
-
-    // ⚡ Chemin absolu vers le dossier "public"
-    app.use(express.static(path.join(__dirname, '..', 'public')));
-
-    // Route principale : renvoie index.html
-    app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-    });
-
-    // Lancement du serveur : utiliser le port fourni par l'hébergeur ou 3000 en local
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
-    });
-
   })
   .catch(err => {
     console.error('❌ Erreur MongoDB:', err);

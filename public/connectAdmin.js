@@ -34,14 +34,23 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({ username, password })
         });
 
-        const data = await res.json();
+        const contentType = res.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        const payload = isJson ? await res.json() : await res.text();
 
         if (res.ok) {
+          const token = isJson ? payload.token : null;
+          if (!token) {
+            console.error('Réponse inattendue (pas de token):', payload);
+            alert('Réponse inattendue du serveur.');
+            return;
+          }
           alert('✅ Connexion réussie !');
-          localStorage.setItem('token', data.token);
+          localStorage.setItem('token', token);
           window.location.href = '/admin.html';
         } else {
-          alert('❌ ' + (data.message || 'Échec de la connexion.'));
+          const message = isJson ? (payload.message || 'Échec de la connexion.') : payload?.slice(0, 200);
+          alert('❌ ' + message);
         }
       } catch (err) {
         alert('❌ Erreur de connexion au serveur.');
